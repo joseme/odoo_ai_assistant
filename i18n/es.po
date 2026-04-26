@@ -1,0 +1,30 @@
+# Translation of Odoo AI Assistant to Spanish
+# This file is distributed under the same license as the Odoo AI Assistant module.
+
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo AI Assistant\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-01 00:00+0000\n"
+"PO-Revision-Date: 2025-01-01 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: Spanish\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. module: odoo_ai_assistant
+#: model:ir.model,name:odoo_ai_assistant.model_ai_chat_conversation
+msgid "Conversación del Asistente de IA"
+msgstr ""
+
+#. module: odoo_ai_assistant
+#: model:ir.model,name:odoo_ai_assistant.model_ai_chat_message
+msgid "Mensaje del Asistente de IA"
+msgstr ""
+
+#. module: odoo_ai_assistant
+#: model:ir.model,name:odoo_ai_assistant.model_ai_assistant_service
+msgid "Servicio del Asistente de IA"
+msgstr ""

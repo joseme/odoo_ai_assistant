@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ai_chat_conversation_user,ai.chat.conversation.user,model_ai_chat_conversation,group_ai_assistant_user,1,1,1,1
+access_ai_chat_message_user,ai.chat.message.user,model_ai_chat_message,group_ai_assistant_user,1,1,1,1
+access_ai_chat_conversation_manager,ai.chat.conversation.manager,model_ai_chat_conversation,group_ai_assistant_manager,1,1,1,1
+access_ai_chat_message_manager,ai.chat.message.manager,model_ai_chat_message,group_ai_assistant_manager,1,1,1,1
