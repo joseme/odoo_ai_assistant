@@ -1,0 +1,177 @@
+INSTALACIÓN DEL MÓDULO ODOO AI ASSISTANT (Docker)
+===============================================
+
+Este documento contiene las instrucciones para instalar el módulo
+AI Assistant en un entorno Odoo basado en Docker.
+
+REQUISITOS PREVIOS
+------------------
+- Odoo 17, 18 o 19 instalado via Docker
+- Acceso SSH/consola al contenedor Docker
+- API Key de Google Gemini configurada
+
+PASO 1: COPIAR EL MÓDULO AL CONTENEDOR
+------------------------------------
+1. Identifica el volumen de addons de Odoo:
+   docker volume ls | grep odoo
+
+2. Copia la carpeta del módulo al volumen:
+   docker cp odoo_ai_assistant/ odoo_container_name:/opt/odoo/addons/ai_assistant/
+
+   O si usas volúmenes Docker estándar:
+   docker cp odoo_ai_assistant/ odoo_addons_volume:/ai_assistant/
+
+PASO 2: INSTALAR DEPENDENCIAS PYTHON
+---------------------------------
+Accede al contenedor:
+docker exec -it odoo_container_name bash
+
+Instala las dependencias:
+pip install google-generativeai>=0.3.0
+pip install duckduckgo-search>=4.0.0
+pip install edge-tts>=6.1.0
+pip install vosk>=0.3.44
+pip install nest-asyncio>=1.5.0
+
+Nota: Si usas docker-compose, añade las dependencias al Dockerfile.
+
+PASO 3: RECONFIGURAR ODOO PARA DETECTAR EL MÓDULO
+------------------------------------------------
+Edita el archivo de configuración de Odoo (por defecto /etc/odoo/odoo.conf)
+y añade la ruta del módulo:
+
+nano /etc/odoo/odoo.conf
+
+Agrega en la sección [options]:
+addons_path = /opt/odoo/addons,/opt/odoo/odoo/addons
+
+Nota: Ajusta las rutas según tu configuración.
+
+另外, si usas docker-compose.yml, añade el volumen:
+
+volumes:
+  - ./ai_assistant:/opt/odoo/addons/ai_assistant
+
+PASO 4: ACTUALIZAR LA LISTA DE MÓDULOS
+--------------------------------------
+Desde la interfaz web:
+1. Ve a: Aplicaciones
+2. Busca "AI Assistant" o actualiza la lista
+3. Instala el módulo
+
+También puedes hacerlo via CLI:
+docker exec odoo_container_name odoo -u all -d tu_base_de_datos -i base
+
+O vía XML-RPC (Python):
+import xmlrpc.client
+
+url = "http://localhost:8069"
+db = "tu_base_de_datos"
+username = "admin"
+password = "tu_password"
+
+models = xmlrpc.client.ServerProxy(url + "/xmlrpc/2/common")
+uid = models.authenticate(db, username, password, {})
+models = xmlrpc.client.ServerProxy(url + "/xmlrpc/2/object")
+
+# Buscar y instalar el módulo
+module_id = models.execute(db, uid, password, 'ir.module.module', 'search', [('name', '=', 'odoo_ai_assistant')])
+if module_id:
+    models.execute(db, uid, password, 'ir.module.module', 'button_install', module_id)
+
+PASO 5: CONFIGURAR API KEY DE GOOGLE GEMINI
+---------------------------------------
+1. Ve a: Ajustes > AI Assistant Settings
+2. Ingresa tu API Key de Google Gemini
+3. Configura el modelo (gemini-2.0-flash por defecto)
+4. Guarda la configuración
+
+Para obtener una API Key:
+1. Ve a https://makersuite.google.com/app/apikey
+2. Crea una nueva API Key
+3. Copia la clave y pégala en la configuración
+
+PASO 6: CONFIGURAR VOZ (OPCIONAL)
+--------------------------------
+El módulo incluye:
+- Input de voz (Vosk): Reconocimiento local
+- Output de voz (edge-tts): Respuestas habladas
+
+Para activar TTS (Text-to-Speech):
+1. Ve a Ajustes > AI Assistant Settings
+2. Habilita "Respuesta hablada"
+3. Selecciona idioma y voz
+
+CONFIGURACIÓN AVANZADA
+-----------------------
+Parámetros configurables (en Ajustes > AI Assistant Settings):
+
+- Modelo de IA: gemini-2.0-flash (recomendado)
+- Voz TTS: es-MX-JorgeNeural (español)
+- Idioma para voz: es
+- Mensaje de Bienvenida: "¡Hola! Soy tu asistente..."
+- Historial máximo: 20 mensajes
+- Búsqueda web: habilitada
+- Knowledge: habilitada
+
+TROUBLESHOOTING
+--------------
+El botón no aparece:
+1. Verifica que el módulo esté instalado correctamente
+2. Limpia la cache del navegador (Ctrl+Shift+R)
+3. Revisa la consola JavaScript (F12) para errores
+4. Ejecuta: docker restart odoo_container_name
+
+Error de API Key:
+1. Verifica que la API Key sea correcta
+2. Confirma que la API esté habilitada en Google Cloud Console
+
+Error de voz:
+1. Verifica los permisos del micrófono
+2. Vosk requiere modelo descargado en /opt/vosk-models
+
+DOCKER-COMPOSE.YML RECOMENDADO
+----------------------------
+version: '3'
+services:
+  odoo:
+    image: odoo:17
+    volumes:
+      - odoo-web-data:/var/lib/odoo
+      - ./ai_assistant:/opt/odoo/addons/ai_assistant
+      - ./custom-addons:/opt/odoo/addons/custom
+    ports:
+      - "8069:8069"
+    environment:
+      - HOST=db
+      - PORT=5432
+      - USER=odoo
+      - PASSWORD=odoo
+    command: odoo -w 2 --addons-path=/opt/odoo/addons,/opt/odoo/odoo/addons,/opt/odoo/addons/custom
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16
+    volumes:
+      - odoo-db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=odoo
+      - POSTGRES_PASSWORD=odoo
+      - POSTGRES_DB=odoo
+
+volumes:
+  odoo-web-data:
+  odoo-db-data:
+
+NOTAS ADICIONALES
+-----------------
+- El módulo es compatible con Odoo 17, 18 y 19
+- Requiere acceso a internet para el API de Gemini
+- Los datos de conversación se almacenan en la base de datos
+- El audio TTS se guarda como adjuntos (limpieza automática diaria)
+- Para desinstalar: primero desactiva el módulo, luego lo elimina
+
+Soporte y documentación adicional:
+- README.md en la raíz del módulo
+- AGENTS.md para desarrolladores

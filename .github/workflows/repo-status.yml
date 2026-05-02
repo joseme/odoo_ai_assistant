@@ -1,0 +1,25 @@
+name: Repo Status Check
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Monday at 9 AM
+  workflow_dispatch:
+
+jobs:
+  check-status:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check repository status
+        run: |
+          echo "Repository Status Report - $(date)"
+          echo "Branch: $(git branch --show-current)"
+          echo "Last commit: $(git log -1 --oneline)"
+          echo "Files changed in last 7 days:"
+          git log --since="7 days ago" --oneline
+      - name: Check Python dependencies
+        run: |
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+            pip list --outdated
+          fi

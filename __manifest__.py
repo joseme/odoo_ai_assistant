@@ -41,9 +41,12 @@
     "assets": {
         "web.assets_backend": [
             "odoo_ai_assistant/static/src/css/ai_chat.css",
+            "odoo_ai_assistant/static/src/js/ai_assistant.js",
             "odoo_ai_assistant/static/src/js/systray.js",
             "odoo_ai_assistant/static/src/js/voice_input.js",
-            "odoo_ai_assistant/static/src/js/ai_assistant.js",
+        ],
+        "web.assets_qweb": [
+            "odoo_ai_assistant/static/src/xml/ai_chat.xml",
         ],
     },
     "installable": True,
