@@ -6,22 +6,16 @@ class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
 
     # --- API Configuration ---
-    ai_assistant_gemini_api_key = fields.Char(
-        string="Gemini API Key",
-        config_parameter="ai_assistant.gemini_api_key",
-        help="Clave API de Google Gemini para el asistente de IA.",
+    ai_assistant_openrouter_api_key = fields.Char(
+        string="OpenRouter API Key",
+        config_parameter="ai_assistant.openrouter_api_key",
+        help="Clave API de OpenRouter para el asistente de IA.",
     )
-    ai_assistant_model_name = fields.Selection(
-        [
-            ("gemini-2.0-flash", "Gemini 2.0 Flash"),
-            ("gemini-2.0-flash-lite", "Gemini 2.0 Flash Lite"),
-            ("gemini-1.5-flash", "Gemini 1.5 Flash"),
-            ("gemini-1.5-pro", "Gemini 1.5 Pro"),
-        ],
+    ai_assistant_model_name = fields.Char(
         string="Modelo de IA",
         config_parameter="ai_assistant.model_name",
-        default="gemini-2.0-flash",
-        help="Modelo de IA a utilizar para generar respuestas.",
+        default="openai/gpt-4o-mini",
+        help="Modelo de IA a utilizar (formato OpenRouter: proveedor/modelo). Ej: openai/gpt-4o, anthropic/claude-sonnet",
     )
 
     # --- Voice Configuration ---

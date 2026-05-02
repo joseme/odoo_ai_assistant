@@ -9,7 +9,7 @@
         =========================
 
         Características principales:
-        - Chat con IA: Respuestas inteligentes sobre el uso de Odoo (Gemini 2.0 Flash / LLM equivalente)
+        - Chat con IA: Respuestas inteligentes sobre el uso de Odoo (OpenRouter / LLM configurable)
         - Input de voz (Vosk): Reconocimiento de voz local, sin enviar audio a servicios externos
         - Respuesta hablada (edge-tts): Voces neuronales de Microsoft Edge, gratis y de alta calidad
         - Contexto automático: Detecta el módulo, modelo y registro que el usuario está viendo
@@ -24,7 +24,6 @@
     "depends": ["base", "web"],
     "external_dependencies": {
         "python": [
-            "google-generativeai",
             "duckduckgo-search",
             "edge-tts",
             "vosk",

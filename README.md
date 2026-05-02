@@ -5,7 +5,7 @@ Asistente de IA integrado en Odoo con chat flotante, reconocimiento de voz local
 ## Características
 
 ### Chat con IA
-- Respuestas inteligentes sobre el uso de Odoo usando **Gemini 2.0 Flash** (o modelo configurable)
+- Respuestas inteligentes sobre el uso de Odoo usando **OpenRouter** (modelo configurable)
 - Historial de conversaciones persistente
 - Formato Markdown en las respuestas (código, listas, encabezados, negritas, etc.)
 - Botón flotante (FAB) accesible desde cualquier pantalla de Odoo

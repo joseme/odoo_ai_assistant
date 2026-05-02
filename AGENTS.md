@@ -10,7 +10,7 @@ Odoo 17/18/19 module (Python). Not a standalone app — requires an Odoo instanc
 sudo bash install.sh
 
 # Option 2: Manual — Python dependencies
-pip install google-generativeai>=0.3.0 duckduckgo-search>=4.0.0 edge-tts>=6.1.0 vosk>=0.3.44 nest-asyncio>=1.5.0
+pip install duckduckgo-search>=4.0.0 edge-tts>=6.1.0 vosk>=0.3.44 nest-asyncio>=1.5.0
 
 # Download Vosk voice model (required for voice input)
 sudo mkdir -p /opt/vosk-models
@@ -25,15 +25,15 @@ cp -r odoo_ai_assistant /path/to/odoo/addons/
 
 ## Configuration
 - Path: **Settings > Ajustes > AI Assistant**
-- Required: `ai_assistant.gemini_api_key` (get free at https://aistudio.google.com/apikey)
+- Required: `ai_assistant.openrouter_api_key` (get at https://openrouter.ai/keys)
 - Vosk model path configurable via `ai_assistant.vosk_model_path` (default `/opt/vosk-models/`); model name via `ai_assistant.vosk_model`
 - Default TTS voice: `es-MX-JorgeNeural` (`ai_assistant.tts_voice`)
 
 ### Config Parameters (ir.config_parameter)
 | Key | Default | Notes |
 |-----|---------|-------|
-| `ai_assistant.gemini_api_key` | (empty) | Required for LLM |
-| `ai_assistant.model_name` | gemini-2.0-flash | gemini-2.0-flash, gemini-2.0-flash-lite, gemini-1.5-flash, gemini-1.5-pro |
+| `ai_assistant.openrouter_api_key` | (empty) | Required for LLM |
+| `ai_assistant.model_name` | openai/gpt-4o-mini | Any OpenRouter model: openai/gpt-4o, anthropic/claude-sonnet, etc. |
 | `ai_assistant.tts_voice` | es-MX-JorgeNeural | edge-tts voice name |
 | `ai_assistant.tts_language` | es | Filters voice list |
 | `ai_assistant.voice_enabled` | True | Vosk voice input |
@@ -52,7 +52,7 @@ cp -r odoo_ai_assistant /path/to/odoo/addons/
 ## Module Structure
 ```
 controllers/ai_chat.py              → API endpoints (JSON-RPC + HTTP routes)
-models/ai_chat.py                   → Core service: LLM (Gemini), Knowledge, DuckDuckGo, TTS
+models/ai_chat.py                   → Core service: LLM (OpenRouter via OpenAI-compatible API), Knowledge, DuckDuckGo, TTS
 models/res_config_settings.py       → Settings backend (fields linked to ir.config_parameter)
 static/src/js/ai_assistant.js       → Main chat widget (legacy Odoo 17 widget system)
 static/src/js/systray.js            → Systray icon button

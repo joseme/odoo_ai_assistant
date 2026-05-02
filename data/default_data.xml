@@ -2,14 +2,14 @@
 <odoo noupdate="1">
 
     <!-- Parámetros de configuración por defecto -->
-    <record id="default_gemini_api_key" model="ir.config_parameter">
-        <field name="key">ai_assistant.gemini_api_key</field>
+    <record id="default_openrouter_api_key" model="ir.config_parameter">
+        <field name="key">ai_assistant.openrouter_api_key</field>
         <field name="value"></field>
     </record>
 
     <record id="default_model_name" model="ir.config_parameter">
         <field name="key">ai_assistant.model_name</field>
-        <field name="value">gemini-2.0-flash</field>
+        <field name="value">openai/gpt-4o-mini</field>
     </record>
 
     <record id="default_tts_voice" model="ir.config_parameter">

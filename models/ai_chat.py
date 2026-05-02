@@ -14,12 +14,6 @@ from odoo.exceptions import UserError
 _logger = logging.getLogger(__name__)
 
 try:
-    import google.generativeai as genai
-except ImportError:
-    genai = None
-    _logger.warning("google-generativeai no está instalado. Instale con: pip install google-generativeai")
-
-try:
     from duckduckgo_search import DDGS
 except ImportError:
     DDGS = None
@@ -163,33 +157,73 @@ class AIAssistantService(models.AbstractModel):
     _description = "Servicio del Asistente de IA"
 
     # ------------------------------------------------------------------ #
-    #  LLM - Generación de respuestas
+    #  LLM - OpenRouter (API compatible con OpenAI)
     # ------------------------------------------------------------------ #
+    OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+
     @api.model
-    def _get_llm_client(self):
-        """Obtiene el cliente LLM configurado (Gemini por defecto)."""
+    def _call_openrouter(self, messages, temperature=0.7, max_tokens=4096):
+        """Llama a la API de OpenRouter (compatible con OpenAI) para generar una respuesta.
+
+        Args:
+            messages: Lista de mensajes en formato OpenAI (role, content)
+            temperature: Temperatura de generación
+            max_tokens: Máximo de tokens a generar
+
+        Returns:
+            Texto de la respuesta generada
+        """
+        import requests as req
+
         api_key = self.env["ir.config_parameter"].sudo().get_param(
-            "ai_assistant.gemini_api_key", ""
+            "ai_assistant.openrouter_api_key", ""
         )
         if not api_key:
             raise UserError(
                 _(
-                    "No se ha configurado la API Key de Gemini. "
+                    "No se ha configurado la API Key de OpenRouter. "
                     "Vaya a Configuración > Ajustes > AI Assistant y configure la clave."
                 )
             )
-        if genai is None:
-            raise UserError(
-                _(
-                    "La librería google-generativeai no está instalada. "
-                    "Ejecute: pip install google-generativeai"
-                )
-            )
-        genai.configure(api_key=api_key)
+
         model_name = self.env["ir.config_parameter"].sudo().get_param(
-            "ai_assistant.model_name", "gemini-2.0-flash"
+            "ai_assistant.model_name", "openai/gpt-4o-mini"
         )
-        return genai.GenerativeModel(model_name)
+
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": model_name,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+
+        try:
+            response = req.post(
+                f"{self.OPENROUTER_BASE_URL}/chat/completions",
+                json=payload,
+                headers=headers,
+                timeout=60,
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data["choices"][0]["message"]["content"]
+        except req.exceptions.Timeout:
+            raise UserError(
+                _("La solicitud a OpenRouter excedió el tiempo de espera. Intente de nuevo.")
+            )
+        except req.exceptions.HTTPError as e:
+            _logger.error("Error HTTP en OpenRouter: %s - %s", e, e.response.text if e.response else "")
+            raise UserError(
+                _("Error al comunicarse con OpenRouter (HTTP %(code)s). Revise su API Key y modelo.") %
+                {"code": e.response.status_code if e.response else "desconocido"}
+            )
+        except Exception as e:
+            _logger.error("Error al llamar a OpenRouter: %s", str(e))
+            raise UserError(_("Error al conectar con OpenRouter: %(error)s") % {"error": str(e)})
 
     @api.model
     def _build_system_prompt(self, context_info=None):
@@ -283,31 +317,35 @@ Ten en cuenta este contexto para dar respuestas más relevantes y específicas.
                 "content": f"Información relevante de búsqueda web:\n{web_context}",
             })
 
-        # Añadir historial de conversación (últimos 20 mensajes para no exceder tokens)
-        for msg in messages[-20:]:
-            role = "user" if msg["role"] == "user" else "model"
+        # Añadir historial de conversación (últimos N mensajes para no exceder tokens)
+        max_history = int(self.env["ir.config_parameter"].sudo().get_param(
+            "ai_assistant.max_history", "20"
+        ))
+        for msg in messages[-max_history:]:
+            role = "user" if msg["role"] == "user" else "assistant"
             enriched_messages.append({"role": role, "content": msg["content"]})
 
-        # 4. Llamar al LLM
+        # 4. Llamar al LLM via OpenRouter
         try:
-            model = self._get_llm_client()
-            chat = model.start_chat(history=[])
-            # Enviar mensajes como historial
-            response = chat.send_message(
-                enriched_messages[-1]["content"] if len(enriched_messages) == 1
-                else [m["content"] for m in enriched_messages],
-                generation_config=genai.types.GenerationConfig(
-                    temperature=0.7,
-                    max_output_tokens=4096,
-                )
+            # Preparar mensajes en formato OpenAI
+            openai_messages = []
+            for msg in enriched_messages:
+                openai_messages.append({
+                    "role": msg["role"],
+                    "content": msg["content"],
+                })
+
+            assistant_response = self._call_openrouter(
+                messages=openai_messages,
+                temperature=0.7,
+                max_tokens=4096,
             )
-            assistant_response = response.text
         except Exception as e:
-            _logger.error("Error al generar respuesta con LLM: %s", str(e))
+            _logger.error("Error al generar respuesta con OpenRouter: %s", str(e))
             # Fallback: intentar respuesta simple
             assistant_response = _(
                 "Lo siento, hubo un error al generar la respuesta. "
-                "Por favor, verifica la configuración de la API Key de Gemini. "
+                "Por favor, verifica la configuración de la API Key de OpenRouter. "
                 "Error: %(error)s"
             ) % {"error": str(e)}
 
