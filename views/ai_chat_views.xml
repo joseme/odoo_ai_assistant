@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================ -->
+    <!--  Vista de formulario de conversación                          -->
+    <!-- ============================================================ -->
+    <record id="ai_chat_conversation_view_form" model="ir.ui.view">
+        <field name="name">ai.chat.conversation.form</field>
+        <field name="model">ai.chat.conversation</field>
+        <field name="arch" type="xml">
+            <form string="Conversación con IA" create="0">
+                <header>
+                    <button name="action_open_conversation"
+                            string="Abrir en Chat"
+                            type="object"
+                            class="btn-primary"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button"
+                                icon="fa-comments"
+                                name="message_count">
+                            <field string="Mensajes" name="message_count" widget="statinfo"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="title" placeholder="Título de la conversación"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Información">
+                            <field name="user_id"/>
+                            <field name="is_active"/>
+                            <field name="create_date"/>
+                        </group>
+                        <group string="Contexto">
+                            <field name="context_module"/>
+                            <field name="context_model"/>
+                            <field name="context_record_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Mensajes" name="messages">
+                            <field name="message_ids">
+                                <tree string="Mensajes" create="0">
+                                    <field name="role" widget="badge"
+                                           decoration-info="role == 'user'"
+                                           decoration-success="role == 'assistant'"
+                                           decoration-warning="role == 'system'"/>
+                                    <field name="content" widget="text"/>
+                                    <field name="has_audio"/>
+                                    <field name="create_date"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================================================ -->
+    <!--  Vista de lista de conversaciones                             -->
+    <!-- ============================================================ -->
+    <record id="ai_chat_conversation_view_list" model="ir.ui.view">
+        <field name="name">ai.chat.conversation.list</field>
+        <field name="model">ai.chat.conversation</field>
+        <field name="arch" type="xml">
+            <tree string="Conversaciones" decoration-muted="not is_active">
+                <field name="title"/>
+                <field name="user_id"/>
+                <field name="context_module"/>
+                <field name="context_model"/>
+                <field name="message_count"/>
+                <field name="is_active"/>
+                <field name="create_date"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ============================================================ -->
+    <!--  Vista de búsqueda de conversaciones                          -->
+    <!-- ============================================================ -->
+    <record id="ai_chat_conversation_view_search" model="ir.ui.view">
+        <field name="name">ai.chat.conversation.search</field>
+        <field name="model">ai.chat.conversation</field>
+        <field name="arch" type="xml">
+            <search string="Buscar conversaciones">
+                <field name="title"/>
+                <field name="user_id"/>
+                <field name="context_module"/>
+                <field name="context_model"/>
+                <filter name="filter_active" string="Activas" domain="[('is_active', '=', True)]"/>
+                <filter name="filter_inactive" string="Inactivas" domain="[('is_active', '=', False)]"/>
+                <filter name="filter_my" string="Mis conversaciones" domain="[('user_id', '=', uid)]"/>
+                <separator/>
+                <filter name="filter_today" string="Hoy" domain="[('create_date', '>=', (context_today()).strftime('%Y-%m-%d'))]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_user" string="Usuario" context="{'group_by': 'user_id'}"/>
+                    <filter name="group_module" string="Módulo" context="{'group_by': 'context_module'}"/>
+                    <filter name="group_date" string="Fecha" context="{'group_by': 'create_date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ============================================================ -->
+    <!--  Vista de formulario de mensajes                              -->
+    <!-- ============================================================ -->
+    <record id="ai_chat_message_view_form" model="ir.ui.view">
+        <field name="name">ai.chat.message.form</field>
+        <field name="model">ai.chat.message</field>
+        <field name="arch" type="xml">
+            <form string="Mensaje" create="0">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="conversation_id"/>
+                            <field name="role"/>
+                            <field name="has_audio"/>
+                            <field name="create_date"/>
+                        </group>
+                        <group>
+                            <field name="audio_attachment_id"
+                                   invisible="has_audio == False"/>
+                        </group>
+                    </group>
+                    <group string="Contenido">
+                        <field name="content" nolabel="1" colspan="2"
+                               readonly="1" style="min-height: 200px;"/>
+                    </group>
+                    <group string="Fuentes" invisible="sources == False">
+                        <field name="sources" nolabel="1" colspan="2"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================================================ -->
+    <!--  Acciones de ventana                                          -->
+    <!-- ============================================================ -->
+    <record id="ai_chat_conversation_action" model="ir.actions.act_window">
+        <field name="name">Conversaciones de IA</field>
+        <field name="res_model">ai.chat.conversation</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="ai_chat_conversation_view_search"/>
+        <field name="context">{'search_default_filter_my': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay conversaciones con el asistente de IA
+            </p>
+            <p>
+                Haz clic en el botón del asistente de IA en la barra superior o el botón flotante
+                para iniciar una conversación.
+            </p>
+        </field>
+    </record>
+
+    <!-- ============================================================ -->
+    <!--  Menú                                                         -->
+    <!-- ============================================================ -->
+    <menuitem id="ai_assistant_menu_root"
+              name="AI Assistant"
+              web_icon="odoo_ai_assistant,static/description/icon.png"
+              sequence="100"/>
+
+    <menuitem id="ai_assistant_menu_conversations"
+              name="Conversaciones"
+              parent="ai_assistant_menu_root"
+              action="ai_chat_conversation_action"
+              sequence="10"/>
+
+</odoo>

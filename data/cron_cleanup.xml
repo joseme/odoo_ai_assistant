@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="cron_cleanup_tts_audio" model="ir.cron">
+        <field name="name">AI Assistant: Limpiar audios TTS antiguos</field>
+        <field name="model_id" ref="model_ai_chat_message"/>
+        <field name="state">code</field>
+        <field name="code">
+model.env['ir.attachment'].sudo().search([
+    ('res_model', '=', 'ai.chat.message'),
+    ('mimetype', '=', 'audio/mpeg'),
+    ('create_date', '&lt;', (datetime.datetime.now() - datetime.timedelta(days=7)).strftime('%Y-%m-%d %H:%M:%S'))
+]).unlink()
+        </field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>
+        <field name="doall" eval="False"/>
+        <field name="active" eval="True"/>
+    </record>
+
+</odoo>

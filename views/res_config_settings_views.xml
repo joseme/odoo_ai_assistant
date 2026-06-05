@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================ -->
+    <!--  Configuración del AI Assistant en Ajustes                    -->
+    <!-- ============================================================ -->
+    <record id="res_config_settings_view_form_ai_assistant" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.ai.assistant</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[1]" position="inside">
+                <block title="AI Assistant" name="ai_assistant_settings">
+                    <!-- Setting: API Key -->
+                    <setting string="OpenRouter API Key"
+                             help="Configura la clave API de OpenRouter para el asistente de IA">
+                        <field name="ai_assistant_openrouter_api_key" password="True"/>
+                    </setting>
+
+                    <!-- Setting: Modelo de IA -->
+                    <setting string="Modelo de IA"
+                             help="Selecciona el modelo de IA a utilizar. OpenRouter soporta cientos de modelos (proveedor/modelo)">
+                        <field name="ai_assistant_model_name"/>
+                        <div class="content-group" invisible="ai_assistant_model_name != '_custom_'">
+                            <div class="row mt16">
+                                <label for="ai_assistant_custom_model" string="Modelo personalizado" class="col-lg-3 o_light_label"/>
+                                <field name="ai_assistant_custom_model" class="col-lg-9"
+                                       placeholder="Ej: openai/gpt-4o, anthropic/claude-sonnet"/>
+                            </div>
+                        </div>
+                    </setting>
+
+                    <!-- Setting: Reconocimiento de voz -->
+                    <setting string="Reconocimiento de voz"
+                             help="Habilita el reconocimiento de voz local con Vosk">
+                        <field name="ai_assistant_voice_enabled"/>
+                        <div class="content-group" invisible="ai_assistant_voice_enabled == False">
+                            <div class="row mt16">
+                                <label for="ai_assistant_vosk_model" string="Modelo Vosk" class="col-lg-3 o_light_label"/>
+                                <field name="ai_assistant_vosk_model" class="col-lg-9"/>
+                            </div>
+                        </div>
+                    </setting>
+
+                    <!-- Setting: Respuesta hablada -->
+                    <setting string="Respuesta hablada (TTS)"
+                             help="Habilita la respuesta hablada con edge-tts">
+                        <field name="ai_assistant_tts_enabled"/>
+                        <div class="content-group" invisible="ai_assistant_tts_enabled == False">
+                            <div class="row mt16">
+                                <label for="ai_assistant_tts_voice" string="Voz TTS" class="col-lg-3 o_light_label"/>
+                                <field name="ai_assistant_tts_voice" class="col-lg-9"/>
+                            </div>
+                            <div class="row mt8">
+                                <label for="ai_assistant_tts_language" string="Idioma TTS" class="col-lg-3 o_light_label"/>
+                                <field name="ai_assistant_tts_language" class="col-lg-9"/>
+                            </div>
+                        </div>
+                    </setting>
+
+                    <!-- Setting: Búsqueda web -->
+                    <setting string="Búsqueda web (DuckDuckGo)"
+                             help="Habilita la búsqueda en DuckDuckGo para enriquecer respuestas">
+                        <field name="ai_assistant_web_search_enabled"/>
+                    </setting>
+
+                    <!-- Setting: Knowledge -->
+                    <setting string="Búsqueda de Conocimiento"
+                             help="Configura la fuente de conocimiento para el asistente">
+                        <field name="ai_assistant_knowledge_search_enabled"/>
+                        <div class="content-group" invisible="ai_assistant_knowledge_search_enabled == False">
+                            <div class="row mt16">
+                                <label for="ai_assistant_knowledge_search_mode" string="Modo de búsqueda" class="col-lg-3 o_light_label"/>
+                                <field name="ai_assistant_knowledge_search_mode" class="col-lg-9"/>
+                            </div>
+                            <div class="content-group" invisible="ai_assistant_knowledge_search_mode != 'anythingllm'">
+                                <div class="row mt8">
+                                    <label for="ai_assistant_anythingllm_url" string="AnythingLLM URL" class="col-lg-3 o_light_label"/>
+                                    <field name="ai_assistant_anythingllm_url" class="col-lg-9"/>
+                                </div>
+                                <div class="row mt8">
+                                    <label for="ai_assistant_anythingllm_key" string="AnythingLLM API Key" class="col-lg-3 o_light_label"/>
+                                    <field name="ai_assistant_anythingllm_key" password="True" class="col-lg-9"/>
+                                </div>
+                                <div class="row mt8">
+                                    <label for="ai_assistant_anythingllm_workspace" string="Workspace ID" class="col-lg-3 o_light_label"/>
+                                    <field name="ai_assistant_anythingllm_workspace" class="col-lg-9"/>
+                                </div>
+                            </div>
+                        </div>
+                    </setting>
+
+                    <!-- Setting: Mensaje de bienvenida -->
+                    <setting string="Mensaje de bienvenida"
+                             help="Mensaje que se muestra al abrir el chat por primera vez">
+                        <field name="ai_assistant_welcome_message"/>
+                    </setting>
+
+                    <!-- Setting: Historial -->
+                    <setting string="Historial de mensajes"
+                             help="Número máximo de mensajes enviados al LLM como contexto">
+                        <field name="ai_assistant_max_history"/>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

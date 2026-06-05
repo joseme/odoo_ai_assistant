@@ -1,0 +1,6 @@
+    1. security.xml — invertido el orden (ahora carga antes que ir.model.access.csv)
+    2. ai_chat_views.xml — convertido attrs a invisible para compatibilidad Odoo 17
+    3. res_config_settings_views.xml — igual, attrs → invisible
+    4. ai_chat.xml — agregado t-name a los templates QWeb
+    5. manifest.py — intentado varias correcciones en los assets
+
