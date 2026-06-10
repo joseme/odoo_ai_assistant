@@ -1,66 +1,40 @@
-odoo.define("odoo_ai_assistant.Systray", function (require) {
-    "use strict";
+/** @odoo-module **/
+// Systray button for the AI Assistant — opens standalone UI
 
-    var SystrayMenu = require("web.SystrayMenu");
-    var Widget = require("web.Widget");
-    var AIAssistant = require("odoo_ai_assistant.AIAssistant");
-    var core = require("web.core");
+import { registry } from "@web/core/registry";
+import { Component, onWillDestroy } from "@odoo/owl";
 
-    var AISystrayItem = Widget.extend({
-        template: "odoo_ai_assistant.SystrayItem",
-        events: {
-            "click": "_onClick",
-        },
+class AISystrayItem extends Component {
+    static template = "odoo_ai_assistant.SystrayIcon";
+    static props = {};
 
-        init: function () {
-            this._super.apply(this, arguments);
-            this._assistant = null;
-            this._chatInitialized = false;
-            this._bindShortcuts();
-        },
+    setup() {
+        // Keyboard shortcut: Ctrl+Shift+H
+        this._onKeyDown = this._onKeyDown.bind(this);
+        document.addEventListener("keydown", this._onKeyDown);
+        onWillDestroy(() => {
+            document.removeEventListener("keydown", this._onKeyDown);
+        });
+    }
 
-        _bindShortcuts: function () {
-            // Listen for Ctrl+Shift+A to toggle the AI assistant
-            $(document).on("keydown.odoo_ai_assistant", function(ev) {
-                // Check for Ctrl+Shift+A (Ctrl=17, Shift=16, A=65)
-                if (ev.ctrlKey && ev.shiftKey && ev.keyCode === 65) {
-                    ev.preventDefault();
-                    this._triggerAssistant();
-                }
-            }.bind(this));
-        },
+    onClick(ev) {
+        ev.preventDefault();
+        this._openUI();
+    }
 
-        _triggerAssistant: function () {
-            var self = this;
-
-            if (!this._assistant) {
-                this._assistant = new AIAssistant(this);
-                this._assistant.attachTo(document.body).then(function() {
-                    self._chatInitialized = true;
-                    self._assistant._onToggle();
-                });
-            } else {
-                this._assistant._onToggle();
-            }
-        },
-
-        _onClick: function (ev) {
+    _onKeyDown(ev) {
+        if (ev.ctrlKey && ev.shiftKey && ev.key === "H") {
             ev.preventDefault();
-            ev.stopPropagation();
-            this._triggerAssistant();
-        },
+            this._openUI();
+        }
+    }
 
-        destroy: function () {
-            $(document).off(".odoo_ai_assistant");
-            if (this._assistant) {
-                this._assistant.destroy();
-                this._assistant = null;
-            }
-            this._super.apply(this, arguments);
-        },
-    });
+    _openUI() {
+        window.open("/ai_assistant/ui", "_blank", "width=500,height=700");
+    }
+}
 
-    SystrayMenu.Items.push(AISystrayItem);
-
-    return AISystrayItem;
-});
+// Register in the systray registry
+registry.category("systray").add("ai_assistant", {
+    Component: AISystrayItem,
+}, { sequence: 10 });

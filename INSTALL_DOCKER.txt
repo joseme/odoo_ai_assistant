@@ -6,171 +6,189 @@ AI Assistant en un entorno Odoo basado en Docker.
 
 REQUISITOS PREVIOS
 ------------------
-- Odoo 17, 18 o 19 instalado via Docker
-- Acceso SSH/consola al contenedor Docker
-- API Key de OpenRouter configurada
+- Servidor Linux con Docker y Docker Compose instalados
+- Odoo 17, 18 o 19 via Docker (o se instalará automaticamente)
+- Acceso SSH al servidor
+- API Key de OpenRouter (https://openrouter.ai/keys)
 
-PASO 1: COPIAR EL MÓDULO AL CONTENEDOR
-------------------------------------
-1. Identifica el volumen de addons de Odoo:
-   docker volume ls | grep odoo
+ESTRUCTURA DEL PROYECTO
+-----------------------
+odoo17-docker/
+├── docker-compose.yml        # Servicios Odoo + PostgreSQL
+├── odoo/
+│   └── Dockerfile            # Imagen Odoo con dependencias Python
+└── custom-addons/
+    └── odoo_ai_assistant/    # Módulo AI Assistant
 
-2. Copia la carpeta del módulo al volumen:
-   docker cp odoo_ai_assistant/ odoo_container_name:/opt/odoo/addons/ai_assistant/
+PASO 1: PREPARAR ARCHIVOS
+-----------------------
+1. Crea la estructura de directorios:
+   mkdir -p odoo17-docker/odoo odoo17-docker/custom-addons
 
-   O si usas volúmenes Docker estándar:
-   docker cp odoo_ai_assistant/ odoo_addons_volume:/ai_assistant/
+2. Copia el módulo:
+   cp -r odoo_ai_assistant/ odoo17-docker/custom-addons/odoo_ai_assistant/
 
-PASO 2: INSTALAR DEPENDENCIAS PYTHON
----------------------------------
-Accede al contenedor:
-docker exec -it odoo_container_name bash
+3. Crea el Dockerfile en odoo17-docker/odoo/Dockerfile:
+   FROM odoo:17
+   USER root
+   RUN pip install --no-cache-dir \
+       'duckduckgo-search>=4.0.0' \
+       'edge-tts>=6.1.0' \
+       'nest-asyncio>=1.5.0' \
+       'vosk>=0.3.44' \
+       'lxml_html_clean'
+   USER odoo
+   EXPOSE 8069
 
-Instala las dependencias:
-pip install duckduckgo-search>=4.0.0
-pip install edge-tts>=6.1.0
-pip install vosk>=0.3.44
-pip install nest-asyncio>=1.5.0
+PASO 2: DOCKER-COMPOSE YML
+-------------------------
+Crea docker-compose.yml:
 
-Nota: Si usas docker-compose, añade las dependencias al Dockerfile.
+version: '3'
+services:
+  odoo-db:
+    image: postgres:16
+    container_name: odoo17-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=odoo
+      - POSTGRES_PASSWORD=***      - POSTGRES_DB=odoo
+    volumes:
+      - odoo-db-data:/var/lib/postgresql/data
+    networks:
+      - odoo-net
 
-PASO 3: RECONFIGURAR ODOO PARA DETECTAR EL MÓDULO
-------------------------------------------------
-Edita el archivo de configuración de Odoo (por defecto /etc/odoo/odoo.conf)
-y añade la ruta del módulo:
-
-nano /etc/odoo/odoo.conf
-
-Agrega en la sección [options]:
-addons_path = /opt/odoo/addons,/opt/odoo/odoo/addons
-
-Nota: Ajusta las rutas según tu configuración.
-
-Además, si usas docker-compose.yml, añade el volumen:
+  odoo:
+    build: ./odoo
+    container_name: odoo17
+    restart: unless-stopped
+    ports:
+      - "8069:8069"
+    volumes:
+      - odoo-web-data:/var/lib/odoo
+      - ./custom-addons:/mnt/extra-addons
+      - /opt/vosk-models:/opt/vosk-models:ro
+    environment:
+      - HOST=odoo-db
+      - PORT=5432
+      - USER=odoo
+      - PASSWORD=***    depends_on:
+      - odoo-db
+    networks:
+      - odoo-net
 
 volumes:
-  - ./ai_assistant:/opt/odoo/addons/ai_assistant
+  odoo-db-data:
+  odoo-web-data:
 
-PASO 4: ACTUALIZAR LA LISTA DE MÓDULOS
---------------------------------------
-Desde la interfaz web:
-1. Ve a: Aplicaciones
-2. Busca "AI Assistant" o actualiza la lista
-3. Instala el módulo
+networks:
+  odoo-net:
+    driver: bridge
 
-También puedes hacerlo via CLI:
-docker exec odoo_container_name odoo -u all -d tu_base_de_datos -i base
+PASO 3: CONSTRUIR Y LEVANTAR
+---------------------------
+cd odoo17-docker
+docker compose build odoo
+docker compose up -d
 
-O vía XML-RPC (Python):
-import xmlrpc.client
+PASO 4: CREAR BASE DE DATOS E INSTALAR MÓDULO
+-------------------------------------------
+4.1 Ajustar pg_hba.conf (opcional - si hay error de autenticacion):
+    docker exec odoo17-db sed -i 's/host all all all scram-sha-256/host all all all trust/' /var/lib/postgresql/data/pg_hba.conf
+    docker exec odoo17-db psql -U odoo -c "SELECT pg_reload_conf();"
 
-url = "http://localhost:8069"
-db = "tu_base_de_datos"
-username = "admin"
-password = "tu_password"
+4.2 Instalar modulos base:
+    docker exec odoo17 odoo -d odoo --db_host odoo-db --db_port 5432 --db_user odoo --db_password <tu_password> \
+      --addons-path=/mnt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons \
+      --stop-after-init -i base
 
-models = xmlrpc.client.ServerProxy(url + "/xmlrpc/2/common")
-uid = models.authenticate(db, username, password, {})
-models = xmlrpc.client.ServerProxy(url + "/xmlrpc/2/object")
+4.3 Instalar AI Assistant:
+    docker exec odoo17 odoo -d odoo --db_host odoo-db --db_port 5432 --db_user odoo --db_password <tu_password> \
+      --addons-path=/mnt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons \
+      --stop-after-init -i odoo_ai_assistant
 
-# Buscar y instalar el módulo
-module_id = models.execute(db, uid, password, 'ir.module.module', 'search', [('name', '=', 'odoo_ai_assistant')])
-if module_id:
-    models.execute(db, uid, password, 'ir.module.module', 'button_install', module_id)
+PASO 5: DESCARGAR MODELO VOSK (para voz offline)
+----------------------------------------------
+mkdir -p /opt/vosk-models
+wget https://alphacephei.com/vosk/models/vosk-model-small-es-0.42.zip -P /opt/vosk-models/
+unzip /opt/vosk-models/vosk-model-small-es-0.42.zip -d /opt/vosk-models/
+rm /opt/vosk-models/vosk-model-small-es-0.42.zip
 
-PASO 5: CONFIGURAR API KEY DE OPENROUTER
+PASO 6: CONFIGURAR API KEY DE OPENROUTER
 ---------------------------------------
-1. Ve a: Ajustes > AI Assistant Settings
-2. Ingresa tu API Key de OpenRouter
-3. Configura el modelo (openai/gpt-4o-mini por defecto)
-4. Guarda la configuración
+1. Accede a http://<servidor>:8069
+2. Inicia sesion con admin / admin
+3. Ve a Ajustes > AI Assistant Settings
+4. Ingresa tu API Key de OpenRouter
+5. Configura el modelo (openai/gpt-4o-mini por defecto)
+6. Guarda la configuracion
 
 Para obtener una API Key:
 1. Ve a https://openrouter.ai/keys
 2. Crea una nueva API Key
-3. Copia la clave y pégala en la configuración
+3. Copia la clave y pegala en la configuracion
 
-PASO 6: CONFIGURAR VOZ (OPCIONAL)
---------------------------------
-El módulo incluye:
-- Input de voz (Vosk): Reconocimiento local
-- Output de voz (edge-tts): Respuestas habladas
+ACTUALIZAR EL MÓDULO TRAS CAMBIOS
+---------------------------------
+1. Sincroniza los archivos al servidor:
+   rsync -avz -e "ssh -i ~/.ssh/tu_clave" \
+     custom-addons/odoo_ai_assistant/ \
+     root@<servidor>:/root/odoo17-docker/custom-addons/odoo_ai_assistant/
 
-Para activar TTS (Text-to-Speech):
-1. Ve a Ajustes > AI Assistant Settings
-2. Habilita "Respuesta hablada"
-3. Selecciona idioma y voz
+2. Fija permisos:
+   ssh root@<servidor> "find /root/odoo17-docker/custom-addons/odoo_ai_assistant/ -type f -exec chmod 644 {} \;"
 
-CONFIGURACIÓN AVANZADA
------------------------
-Parámetros configurables (en Ajustes > AI Assistant Settings):
+3. Actualiza el modulo en Odoo:
+   docker exec odoo17 odoo -d odoo --db_host odoo-db --db_port 5432 --db_user odoo --db_password <tu_password> \
+     --addons-path=/mnt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons \
+     --stop-after-init -u odoo_ai_assistant
 
-- Modelo de IA: openai/gpt-4o-mini (recomendado)
-- Voz TTS: es-MX-JorgeNeural (español)
-- Idioma para voz: es
-- Mensaje de Bienvenida: "¡Hola! Soy tu asistente..."
-- Historial máximo: 20 mensajes
-- Búsqueda web: habilitada
-- Knowledge: habilitada
+4. Limpia cache de assets en DB:
+   docker exec odoo17-db psql -U odoo -d odoo -c "DELETE FROM ir_attachment WHERE name LIKE 'web.assets%';"
+
+5. Reinicia Odoo:
+   docker compose -f /root/odoo17-docker/docker-compose.yml restart odoo
+
+6. Hard refresh en el navegador (Ctrl+Shift+R)
 
 TROUBLESHOOTING
 --------------
-El botón no aparece:
-1. Verifica que el módulo esté instalado correctamente
-2. Limpia la cache del navegador (Ctrl+Shift+R)
-3. Revisa la consola JavaScript (F12) para errores
-4. Ejecuta: docker restart odoo_container_name
+El boton no aparece:
+1. Verifica que el modulo este instalado (Apps > AI Assistant)
+2. Haz hard refresh (Ctrl+Shift+R)
+3. Revisa la consola JS (F12) si ves el mensaje ">>> AI FAB Standalone: inicializando"
+4. Verifica permisos: los .js deben tener chmod 644
 
 Error de API Key:
-1. Verifica que la API Key sea correcta en Ajustes > AI Assistant
-2. Confirma que la API Key de OpenRouter esté activa en https://openrouter.ai/keys
+1. Verifica que la API Key sea correcta en Ajustes > AI Assistant Settings
+2. La clave debe empezar con 'sk-or-'
 
 Error de voz:
-1. Verifica los permisos del micrófono
+1. Verifica los permisos del microfono
 2. Vosk requiere modelo descargado en /opt/vosk-models
+3. El contenedor debe tener montado /opt/vosk-models como volumen
 
-DOCKER-COMPOSE.YML RECOMENDADO
-----------------------------
-version: '3'
-services:
-  odoo:
-    image: odoo:17
-    volumes:
-      - odoo-web-data:/var/lib/odoo
-      - ./ai_assistant:/opt/odoo/addons/ai_assistant
-      - ./custom-addons:/opt/odoo/addons/custom
-    ports:
-      - "8069:8069"
-    environment:
-      - HOST=db
-      - PORT=5432
-      - USER=odoo
-      - PASSWORD=odoo
-    command: odoo -w 2 --addons-path=/opt/odoo/addons,/opt/odoo/odoo/addons,/opt/odoo/addons/custom
-    depends_on:
-      - db
+Error "password authentication failed":
+1. Ejecuta en la DB: ALTER USER odoo WITH PASSWORD '<tu_password>';
+2. O cambia pg_hba.conf de scram-sha-256 a trust (ver Paso 4.1)
 
-  db:
-    image: postgres:16
-    volumes:
-      - odoo-db-data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_USER=odoo
-      - POSTGRES_PASSWORD=odoo
-      - POSTGRES_DB=odoo
-
-volumes:
-  odoo-web-data:
-  odoo-db-data:
+Error "JSON.parse: unexpected character":
+- El backend devuelve HTML en vez de JSON. Revisa logs: docker logs odoo17
+- Comunmente es error 500 interno (API key invalida, dependencias faltantes)
 
 NOTAS ADICIONALES
 -----------------
-- El módulo es compatible con Odoo 17, 18 y 19
+- Compatible con Odoo 17, 18 y 19
 - Requiere acceso a internet para la API de OpenRouter
-- Los datos de conversación se almacenan en la base de datos
-- El audio TTS se guarda como adjuntos (limpieza automática diaria)
-- Para desinstalar: primero desactiva el módulo, luego lo elimina
+- Los datos de conversacion se almacenan en la base de datos
+- El audio TTS se guarda como adjuntos (limpieza automatica diaria)
+- Puerto por defecto: 8069
+- Usuario por defecto: admin / admin (configurar en primer inicio)
+- El FAB (🤖) aparece en la esquina inferior derecha SOLO despues de iniciar sesion
 
-Soporte y documentación adicional:
-- README.md en la raíz del módulo
-- AGENTS.md para desarrolladores
+!A_FORMATEAR!
+ Si en el futuro querés hacer modificaciones al módulo, recordá que tenés que rsync los cambios al VPS:
+    bash
+    rsync -avz -e "ssh -i ~/.ssh/hermes_vps" \
+      /home/jose/desarrollo/odoo_ai_assistant/ \
+      root@65.75.202.27:/root/odoo17-docker/custom-addons/odoo_ai_assistant/

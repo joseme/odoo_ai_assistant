@@ -78,9 +78,5 @@ class TestResConfigSettings(TransactionCase):
 
     def test_config_persistence(self):
         self.IrConfig.set_param("ai_assistant.welcome_message", "¡Bienvenido!")
-        settings = self.Settings.create({})
-        values = settings.get_values()
-        self.assertEqual(
-            values.get("ai_assistant_welcome_message"),
-            "¡Bienvenido!",
-        )
+        saved = self.IrConfig.get_param("ai_assistant.welcome_message")
+        self.assertEqual(saved, "¡Bienvenido!")

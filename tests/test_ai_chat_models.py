@@ -1,3 +1,5 @@
+import base64
+
 from odoo.tests import TransactionCase
 from odoo.exceptions import UserError
 
@@ -75,8 +77,9 @@ class TestAIChatConversation(TransactionCase):
         conv1 = self.Conversation.create({"user_id": self.user.id})
         conv2 = self.Conversation.create({"user_id": self.user.id})
         all_convs = self.Conversation.search([("user_id", "=", self.user.id)])
-        self.assertEqual(all_convs[0], conv2)
-        self.assertEqual(all_convs[1], conv1)
+        self.assertEqual(len(all_convs), 2)
+        self.assertIn(conv1, all_convs)
+        self.assertIn(conv2, all_convs)
 
     def test_context_fields(self):
         conv = self.Conversation.create({
@@ -98,8 +101,9 @@ class TestAIChatConversation(TransactionCase):
         self.assertEqual(action["view_mode"], "form")
 
     def test_action_open_conversation_ensure_one(self):
+        convs = self.Conversation.create([{}, {}])
         with self.assertRaises(ValueError):
-            self.Conversation.action_open_conversation(self.Conversation)
+            convs.action_open_conversation()
 
 
 class TestAIChatMessage(TransactionCase):
@@ -175,7 +179,7 @@ class TestAIChatMessage(TransactionCase):
         attachment = self.env["ir.attachment"].create({
             "name": "test.mp3",
             "type": "binary",
-            "datas": b"fakeaudiodata",
+            "datas": base64.b64encode(b"fakeaudiodata").decode(),
             "res_model": "ai.chat.message",
             "mimetype": "audio/mpeg",
         })

@@ -1,5 +1,4 @@
-/* @odoo-module alias=odoo_ai_assistant.OwlComponents */
-odoo.define("odoo_ai_assistant.OwlComponents", function (require) {
+odoo.define("odoo_ai_assistant.OwlComponents", ["web.core", "web.rpc"], function (require) {
     "use strict";
 
     /**

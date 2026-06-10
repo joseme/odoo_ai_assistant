@@ -18,7 +18,7 @@
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button class="oe_stat_button"
-                                icon="fa-comments"
+                                icon="bi-chat-dots"
                                 name="message_count">
                             <field string="Mensajes" name="message_count" widget="statinfo"/>
                         </button>
@@ -171,5 +171,25 @@
               parent="ai_assistant_menu_root"
               action="ai_chat_conversation_action"
               sequence="10"/>
+
+    <!-- ============================================================ -->
+    <!--  Vista QWeb del chat flotante                              -->
+    <!-- ============================================================ -->
+    <template id="chat_view" name="Chat IA">
+        <t t-call="web.layout">
+            <div class="o_view_manager_content">
+                <div class="o_chat_container" style="max-width:500px;margin:0 auto;padding:20px;">
+                    <h1>AI Assistant</h1>
+                    <div id="ai_messages" style="height:400px;overflow-y:auto;border:1px solid #ddd;padding:10px;margin:10px 0;">
+                    </div>
+                    <div style="display:flex;gap:10px;">
+                        <input type="text" id="ai_input" placeholder="Escribe tu mensaje..." 
+                               style="flex:1;padding:10px;border:1px solid #ddd;border-radius:4px;"/>
+                        <button id="ai_send" class="btn btn-primary">Enviar</button>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
 
 </odoo>

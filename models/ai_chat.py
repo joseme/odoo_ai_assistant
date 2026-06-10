@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import asyncio
 import json
 import logging
@@ -36,7 +35,7 @@ except ImportError:
 class AIChatConversation(models.Model):
     _name = "ai.chat.conversation"
     _description = "Conversación del Asistente de IA"
-    _order = "create_date desc"
+    _order = "create_date desc, id desc"
     _rec_name = "title"
 
     title = fields.Char(
@@ -203,6 +202,9 @@ class AIAssistantService(models.AbstractModel):
             "max_tokens": max_tokens,
         }
 
+        _logger.warning(">>> Payload OpenRouter: %s", json.dumps(payload, indent=2))
+        _logger.warning(">>> Headers OpenRouter: %s", headers)
+        
         try:
             response = req.post(
                 f"{self.OPENROUTER_BASE_URL}/chat/completions",
@@ -210,8 +212,12 @@ class AIAssistantService(models.AbstractModel):
                 headers=headers,
                 timeout=60,
             )
+            _logger.warning(">>> Response status: %s", response.status_code)
+            if response.status_code != 200:
+                _logger.warning(">>> Response body: %s", response.text[:500])
             response.raise_for_status()
             data = response.json()
+            _logger.warning(">>> Response JSON: %s", json.dumps(data)[:500])
             return data["choices"][0]["message"]["content"]
         except req.exceptions.Timeout:
             raise UserError(
@@ -246,20 +252,26 @@ Reglas importantes:
 - Cuando expliques procesos, indica los pasos de forma clara: ir a X > hacer clic en Y > etc.
 - Si no estás seguro de algo, indícalo claramente
 - Si la pregunta no está relacionada con Odoo, responde brevemente y redirige al usuario hacia temas de Odoo
-- Formatea las respuestas usando Markdown para mayor legibilidad
+- NO uses formato Markdown. Usa texto plano con estos atributos:
+  * Negrita: encierra entre « » (comillas latinas)
+  * Código o nombres técnicos: entre comillas simples ''
+  * Listas: usa guiones (-) al inicio de línea
+  * Separación: líneas en blanco entre párrafos
+Ejemplo: «Ventas» es el módulo que buscas. Allí encuentras 'product.template' para gestionar productos.
 """
         if context_info:
             base_prompt += f"""
 
 Contexto actual del usuario en Odoo:
-- Módulo: {context_info.get('module', 'Desconocido')}
+- Menú activo: {context_info.get('menu', 'Desconocido')}
+- Breadcrumb: {context_info.get('breadcrumb', 'N/A')}
 - Modelo: {context_info.get('model', 'Desconocido')}
-- Registro: {context_info.get('record_name', 'Ninguno')}
-- ID del registro: {context_info.get('record_id', 'N/A')}
-- Acción: {context_info.get('action', 'N/A')}
-- Vista: {context_info.get('view_type', 'N/A')}
+- ID de registro: {context_info.get('res_id', 'N/A')}
+- Action ID: {context_info.get('action_id', 'N/A')}
+- URL: {context_info.get('url', 'N/A')}
+- Título de página: {context_info.get('title', 'N/A')}
 
-Ten en cuenta este contexto para dar respuestas más relevantes y específicas.
+El usuario está viendo esta página de Odoo. Usa este contexto para dar respuestas más relevantes y específicas sobre lo que el usuario está viendo.
 """
         return base_prompt
 
@@ -357,9 +369,50 @@ Ten en cuenta este contexto para dar respuestas más relevantes y específicas.
             ) % {"error": str(e)}
 
         return {
-            "response": assistant_response,
+            "response": self._markdown_to_plain(assistant_response),
             "sources": sources,
         }
+
+    @api.model
+    def _markdown_to_plain(self, text):
+        """Convierte Markdown a texto plano con atributos de formato.
+        
+        - **texto** o __texto__ -> «texto»
+        - `codigo` -> 'codigo'
+        - ### Título -> TÍTULO (en mayúscula)
+        - links [texto](url) -> texto (url)
+        - ``` ... ``` -> se mantiene pero sin los backticks triples
+        """
+        import re
+        
+        # Bloques de código triple: ``` ... ```
+        text = re.sub(r'```(?:\w+)?\n?(.*?)\n?```', r'[código]\1[/código]', text, flags=re.DOTALL)
+        
+        # Código inline: `codigo`
+        text = re.sub(r'`([^`]+)`', r"'\1'", text)
+        
+        # Negrita: **texto** o __texto__
+        text = re.sub(r'\*\*(.+?)\*\*', r'«\1»', text)
+        text = re.sub(r'__(.+?)__', r'«\1»', text)
+        
+        # Cursiva: *texto* o _texto_ (pero no si ya está dentro de « »)
+        text = re.sub(r'(?<!«)\*(.+?)\*(?!»)', r'_\1_', text)
+        text = re.sub(r'(?<!«)_(.+?)_(?!»)', r'_\1_', text)
+        
+        # Títulos: ### texto -> TEXTO
+        text = re.sub(r'^#{1,6}\s+(.+)$', lambda m: m.group(1).upper(), text, flags=re.MULTILINE)
+        
+        # Links: [texto](url) -> texto (url)
+        text = re.sub(r'\[(.+?)\]\((.+?)\)', r'\1 (\2)', text)
+        
+        # Listas: - item -> - item (ya está bien)
+        # Listas numeradas: 1. item -> - item (unificar)
+        text = re.sub(r'^\d+\.\s+', '- ', text, flags=re.MULTILINE)
+        
+        # Cerrar [código] -> eliminar marcadores (el contenido ya está con '')
+        text = text.replace('[código]', '').replace('[/código]', '')
+        
+        return text.strip()
 
     # ------------------------------------------------------------------ #
     #  Knowledge - Búsqueda en módulo Knowledge de Odoo

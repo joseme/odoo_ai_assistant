@@ -1,5 +1,4 @@
-/* @odoo-module alias=odoo_ai_assistant.AIAssistant */
-odoo.define("odoo_ai_assistant.AIAssistant", function (require) {
+odoo.define("odoo_ai_assistant.AIAssistant", ["web.core", "web.Widget", "web.rpc"], function (require) {
     "use strict";
 
     var core = require("web.core");
@@ -7,6 +6,56 @@ odoo.define("odoo_ai_assistant.AIAssistant", function (require) {
     var rpc = require("web.rpc");
     var _t = core._t;
     var QWeb = core.qweb;
+
+    // Crear FAB automáticamente si no existe
+    function _createFab() {
+        if (document.querySelector(".ai_assistant_fab")) {
+            console.log(">>> FAB ya existe");
+            return;
+        }
+        console.log(">>> Creando FAB");
+        var fab = document.createElement("div");
+        fab.className = "ai_assistant_fab ai_assistant_toggle";
+        fab.title = "Asistente de IA (Ctrl+Alt+A)";
+        fab.innerHTML = '<i class="bi bi-apps"></i>';
+        fab.style.display = "none";
+        
+        // Agregar event listener directamente
+        fab.addEventListener("click", function(e) {
+            console.log(">>> Click en FAB manual");
+            // Buscar si el widget ya está inicializado
+            var widgetInstance = window._aiAssistantInstance;
+            if (widgetInstance) {
+                console.log(">>> Usando widget existente");
+                widgetInstance._onToggle();
+            } else {
+                console.log(">>> Widget no inicializado, creando nuevo");
+            }
+        });
+        
+        document.body.appendChild(fab);
+        // Mostrar después de un delay para asegurar que el DOM está listo
+        setTimeout(function() { fab.style.display = "flex"; }, 1000);
+    }
+
+    // Keyboard shortcut global
+    document.addEventListener("keydown", function(ev) {
+        if (ev.ctrlKey && ev.altKey && ev.key === "A") {
+            ev.preventDefault();
+            _toggleOrCreate();
+        }
+    });
+
+    function _toggleOrCreate() {
+        var existing = document.querySelector(".ai_assistant_fab");
+        if (!existing) {
+            _createFab();
+        }
+        // Trigger click en el FAB
+        if (existing) {
+            existing.click();
+        }
+    }
 
     var AIAssistant = Widget.extend({
         template: "odoo_ai_assistant.ChatWindow",
@@ -52,6 +101,10 @@ odoo.define("odoo_ai_assistant.AIAssistant", function (require) {
             this.$input = this.$(".ai_assistant_input");
             this.$messages = this.$(".ai_assistant_messages");
             this.$sendBtn = this.$(".ai_assistant_send");
+
+            // Guardar instancia global para el click del FAB
+            window._aiAssistantInstance = this;
+            console.log(">>> Widget iniciado, instancia guardada en window");
 
             // Mostrar mensaje de bienvenida
             if (this.config.welcome_message) {
@@ -149,6 +202,8 @@ odoo.define("odoo_ai_assistant.AIAssistant", function (require) {
             var message = this.$input.val().trim();
             if (!message || this.isLoading) return;
 
+            console.log(">>> Enviando mensaje:", message);
+            
             this.$input.val("");
             this._addMessage("user", message);
             this._setLoading(true);
@@ -163,6 +218,7 @@ odoo.define("odoo_ai_assistant.AIAssistant", function (require) {
                 },
             })
             .then(function (result) {
+                console.log(">>> Respuesta recibida:", result);
                 self._setLoading(false);
                 if (result.error) {
                     self._addMessage("system", "Error: " + result.error);
@@ -217,11 +273,11 @@ odoo.define("odoo_ai_assistant.AIAssistant", function (require) {
             // Avatar
             var $avatar = $('<div class="ai_assistant_msg_avatar"></div>');
             if (msg.role === "user") {
-                $avatar.html('<i class="fa fa-user"></i>');
+                $avatar.html('<i class="bi bi-person"></i>');
             } else if (msg.role === "assistant") {
-                $avatar.html('<i class="fa fa-robot"></i>');
+                $avatar.html('<i class="bi bi-apps"></i>');
             } else {
-                $avatar.html('<i class="fa fa-info-circle"></i>');
+                $avatar.html('<i class="bi bi-info-circle"></i>');
             }
 
             // Contenido
@@ -242,7 +298,7 @@ odoo.define("odoo_ai_assistant.AIAssistant", function (require) {
             if (msg.role === "assistant" && msg.tts_attachment_id && this.config.tts_enabled) {
                 var $audioBtn = $(
                     '<button class="ai_assistant_play_audio" title="Escuchar respuesta">' +
-                    '<i class="fa fa-volume-up"></i></button>'
+                    '<i class="bi bi-volume-up"></i></button>'
                 );
                 $audioBtn.data("attachment-id", msg.tts_attachment_id);
                 $meta.append($audioBtn);
@@ -253,7 +309,7 @@ odoo.define("odoo_ai_assistant.AIAssistant", function (require) {
                 var $sources = $('<div class="ai_assistant_sources"></div>');
                 var $sourcesToggle = $(
                     '<button class="ai_assistant_sources_toggle">' +
-                    '<i class="fa fa-link"></i> Fuentes</button>'
+                    '<i class="bi bi-link-45deg"></i> Fuentes</button>'
                 );
                 var $sourcesList = $('<div class="ai_assistant_sources_list" style="display:none;"></div>');
 
@@ -262,7 +318,7 @@ odoo.define("odoo_ai_assistant.AIAssistant", function (require) {
                         source.items.forEach(function (item) {
                             $sourcesList.append(
                                 '<div class="ai_assistant_source_item">' +
-                                '<i class="fa fa-book"></i> ' +
+                                '<i class="bi bi-book"></i> ' +
                                 '<span class="ai_assistant_source_link" data-model="' +
                                 item.model + '" data-id="' + item.id + '">' +
                                 item.title + "</span></div>"
@@ -272,7 +328,7 @@ odoo.define("odoo_ai_assistant.AIAssistant", function (require) {
                         source.items.forEach(function (item) {
                             $sourcesList.append(
                                 '<div class="ai_assistant_source_item">' +
-                                '<i class="fa fa-globe"></i> ' +
+                                '<i class="bi bi-globe"></i> ' +
                                 '<a href="' + item.url + '" target="_blank" rel="noopener">' +
                                 item.title + "</a></div>"
                             );
@@ -282,7 +338,7 @@ odoo.define("odoo_ai_assistant.AIAssistant", function (require) {
 
                 $sourcesToggle.on("click", function () {
                     $sourcesList.toggle();
-                    $(this).find("i").toggleClass("fa-link fa-chevron-down");
+                    $(this).find("i").toggleClass("bi bi-link-45deg bi bi-chevron-down");
                 });
 
                 $sources.append($sourcesToggle).append($sourcesList);
@@ -346,7 +402,7 @@ odoo.define("odoo_ai_assistant.AIAssistant", function (require) {
                 this.$sendBtn.prop("disabled", true);
                 var $loadingMsg = $(
                     '<div class="ai_assistant_msg ai_assistant_msg_assistant ai_assistant_loading_msg">' +
-                    '<div class="ai_assistant_msg_avatar"><i class="fa fa-robot"></i></div>' +
+                    '<div class="ai_assistant_msg_avatar"><i class="bi bi-apps"></i></div>' +
                     '<div class="ai_assistant_msg_body">' +
                     '<div class="ai_assistant_typing">' +
                     '<span></span><span></span><span></span>' +
@@ -380,28 +436,28 @@ odoo.define("odoo_ai_assistant.AIAssistant", function (require) {
             if (this._audioPlayer) {
                 this._audioPlayer.pause();
                 this._audioPlayer = null;
-                $btn.find("i").removeClass("fa-stop").addClass("fa-volume-up");
+                $btn.find("i").removeClass("bi bi-stop-fill").addClass("bi bi-volume-up");
                 return;
             }
 
             // Reproducir nuevo audio
             var audioUrl = "/ai_assistant/audio/" + attachmentId;
             this._audioPlayer = new Audio(audioUrl);
-            $btn.find("i").removeClass("fa-volume-up").addClass("fa-stop");
+            $btn.find("i").removeClass("bi bi-volume-up").addClass("bi bi-stop-fill");
 
             this._audioPlayer.onended = function () {
-                $btn.find("i").removeClass("fa-stop").addClass("fa-volume-up");
+                $btn.find("i").removeClass("bi bi-stop-fill").addClass("bi bi-volume-up");
                 this._audioPlayer = null;
             }.bind(this);
 
             this._audioPlayer.onerror = function () {
-                $btn.find("i").removeClass("fa-stop").addClass("fa-volume-up");
+                $btn.find("i").removeClass("bi bi-stop-fill").addClass("bi bi-volume-up");
                 this._audioPlayer = null;
             }.bind(this);
 
             this._audioPlayer.play().catch(function (e) {
                 console.warn("Error reproduciendo audio:", e);
-                $btn.find("i").removeClass("fa-stop").addClass("fa-volume-up");
+                $btn.find("i").removeClass("bi bi-stop-fill").addClass("bi bi-volume-up");
             });
         },
 
@@ -433,7 +489,7 @@ odoo.define("odoo_ai_assistant.AIAssistant", function (require) {
             var self = this;
             this.isRecording = true;
             this.$(".ai_assistant_voice_btn").addClass("recording");
-            this.$(".ai_assistant_voice_btn i").removeClass("fa-microphone").addClass("fa-stop");
+            this.$(".ai_assistant_voice_btn i").removeClass("bi bi-mic").addClass("bi bi-stop-fill");
 
             navigator.mediaDevices
                 .getUserMedia({ audio: true })
@@ -465,7 +521,7 @@ odoo.define("odoo_ai_assistant.AIAssistant", function (require) {
                 .catch(function (err) {
                     self.isRecording = false;
                     self.$(".ai_assistant_voice_btn").removeClass("recording");
-                    self.$(".ai_assistant_voice_btn i").removeClass("fa-stop").addClass("fa-microphone");
+                    self.$(".ai_assistant_voice_btn i").removeClass("bi bi-stop-fill").addClass("bi bi-mic");
                     self._addMessage("system", "No se pudo acceder al micrófono. Verifica los permisos.");
                     console.error("Error accediendo al micrófono:", err);
                 });
@@ -474,7 +530,7 @@ odoo.define("odoo_ai_assistant.AIAssistant", function (require) {
         _stopRecording: function () {
             this.isRecording = false;
             this.$(".ai_assistant_voice_btn").removeClass("recording");
-            this.$(".ai_assistant_voice_btn i").removeClass("fa-stop").addClass("fa-microphone");
+            this.$(".ai_assistant_voice_btn i").removeClass("bi bi-stop-fill").addClass("bi bi-mic");
 
             if (this._mediaRecorder && this._mediaRecorder.state === "recording") {
                 this._mediaRecorder.stop();
@@ -528,7 +584,7 @@ odoo.define("odoo_ai_assistant.AIAssistant", function (require) {
 
             this.isRecording = true;
             this.$(".ai_assistant_voice_btn").addClass("recording");
-            this.$(".ai_assistant_voice_btn i").removeClass("fa-microphone").addClass("fa-stop");
+            this.$(".ai_assistant_voice_btn i").removeClass("bi bi-mic").addClass("bi bi-stop-fill");
 
             recognition.onresult = function (event) {
                 var text = event.results[0][0].transcript;
@@ -547,7 +603,7 @@ odoo.define("odoo_ai_assistant.AIAssistant", function (require) {
             recognition.onend = function () {
                 self.isRecording = false;
                 self.$(".ai_assistant_voice_btn").removeClass("recording");
-                self.$(".ai_assistant_voice_btn i").removeClass("fa-stop").addClass("fa-microphone");
+                self.$(".ai_assistant_voice_btn i").removeClass("bi bi-stop-fill").addClass("bi bi-mic");
             };
 
             recognition.start();
@@ -590,7 +646,7 @@ odoo.define("odoo_ai_assistant.AIAssistant", function (require) {
                     (conv.message_count || 0) + " mensajes" +
                     "</div>" +
                     '<button class="ai_assistant_delete_chat" data-id="' + conv.id + '" title="Eliminar">' +
-                    '<i class="fa fa-trash"></i></button>' +
+                    '<i class="bi bi-trash"></i></button>' +
                     "</div>"
                 );
                 $historyList.append($item);

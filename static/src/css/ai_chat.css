@@ -75,20 +75,58 @@
     }
 }
 
-/* ---- Systray Button ---- */
+/* ---- Systray Button (Odoo 17+ en barra superior) ---- */
 .ai_assistant_systray_btn {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 4px;
+    background: transparent !important;
+    color: #6c757d !important;
     cursor: pointer;
-    padding: 0 8px;
-    color: #666;
-    transition: color 0.2s;
+    transition: all 0.2s ease;
+    margin-right: 4px;
 }
 
 .ai_assistant_systray_btn:hover {
-    color: var(--ai-primary);
+    background: #f0f0f0 !important;
+    color: #7c58ed !important;
 }
 
 .ai_assistant_systray_btn i {
-    font-size: 18px;
+    font-size: 18px !important;
+}
+
+/* ---- FAB Button (fallback: botón flotante abajo derecha) ---- */
+.ai_assistant_fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--ai-primary), var(--ai-primary-dark));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+    transition: all 0.3s ease;
+    z-index: 99999;
+}
+
+.ai_assistant_systray_btn:hover,
+.ai_assistant_fab:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 25px rgba(124, 58, 237, 0.5);
+}
+
+.ai_assistant_systray_btn i,
+.ai_assistant_fab i {
+    font-size: 28px;
 }
 
 /* ---- Ventana del Chat ---- */

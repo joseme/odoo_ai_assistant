@@ -188,7 +188,7 @@ class TestAIAssistantServiceGenerateResponse(TransactionCase):
     def test_generate_response_with_user_message(self):
         messages = [{"role": "user", "content": "¿Qué es Odoo?"}]
         result = self.service.generate_response(
-            messages, search_knowledge=False, search_web=False
+            messages, context_info=None, search_knowledge=False, search_web=False
         )
         self.assertIn("response", result)
         self.assertIn("error", result["response"].lower())
@@ -196,7 +196,7 @@ class TestAIAssistantServiceGenerateResponse(TransactionCase):
     def test_generate_response_sources_empty_when_disabled(self):
         messages = [{"role": "user", "content": "test"}]
         result = self.service.generate_response(
-            messages, search_knowledge=False, search_web=False
+            messages, context_info=None, search_knowledge=False, search_web=False
         )
         self.assertEqual(result["sources"], [])
 
@@ -208,30 +208,30 @@ class TestAIAssistantServiceGenerateResponse(TransactionCase):
             {"role": "user", "content": f"Mensaje {i}"}
             for i in range(10)
         ]
-        with patch.object(self.service, "_call_openrouter") as mock:
+        with patch.object(type(self.service), "_call_openrouter") as mock:
             mock.side_effect = UserError("No API key")
             result = self.service.generate_response(
-                messages, search_knowledge=False, search_web=False
+                messages, context_info=None, search_knowledge=False, search_web=False
             )
         self.assertIn("error", result["response"].lower())
 
     def test_generate_response_knowledge_error_does_not_break(self):
         messages = [{"role": "user", "content": "test"}]
         with patch.object(
-            self.service, "_search_knowledge", side_effect=Exception("Knowledge fail")
+            type(self.service), "_search_knowledge", side_effect=Exception("Knowledge fail")
         ):
             result = self.service.generate_response(
-                messages, search_knowledge=True, search_web=False
+                messages, context_info=None, search_knowledge=True, search_web=False
             )
         self.assertIn("response", result)
 
     def test_generate_response_web_error_does_not_break(self):
         messages = [{"role": "user", "content": "test"}]
         with patch.object(
-            self.service, "_search_web", side_effect=Exception("Web fail")
+            type(self.service), "_search_web", side_effect=Exception("Web fail")
         ):
             result = self.service.generate_response(
-                messages, search_knowledge=False, search_web=True
+                messages, context_info=None, search_knowledge=False, search_web=True
             )
         self.assertIn("response", result)
 
@@ -242,9 +242,9 @@ class TestAIAssistantServiceGenerateResponse(TransactionCase):
             "model": "crm.lead",
             "record_name": "Lead #1",
         }
-        with patch.object(self.service, "_build_system_prompt") as mock_prompt:
+        with patch.object(type(self.service), "_build_system_prompt") as mock_prompt:
             mock_prompt.return_value = "System prompt"
-            with patch.object(self.service, "_call_openrouter") as mock_call:
+            with patch.object(type(self.service), "_call_openrouter") as mock_call:
                 mock_call.side_effect = UserError("No API key")
                 self.service.generate_response(
                     messages, context_info=context,

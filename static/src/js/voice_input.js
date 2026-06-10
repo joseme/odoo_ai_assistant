@@ -1,5 +1,4 @@
-/* @odoo-module alias=odoo_ai_assistant.VoiceInput */
-odoo.define("odoo_ai_assistant.VoiceInput", function (require) {
+odoo.define("odoo_ai_assistant.VoiceInput", ["web.core", "web.Widget", "web.rpc"], function (require) {
     "use strict";
 
     var core = require("web.core");
