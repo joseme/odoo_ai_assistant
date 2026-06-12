@@ -21,7 +21,6 @@
     },
     "data": [
         "security/security.xml",
-        "security/ir_rule.xml",
         "security/ir.model.access.csv",
         "views/ai_chat_views.xml",
         "views/res_config_settings_views.xml",

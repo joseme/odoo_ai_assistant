@@ -193,17 +193,3 @@
     }, 3000);
     
 })();
-    if (document.body) {
-        createFab();
-    } else {
-        document.addEventListener("DOMContentLoaded", function() {
-            createFab();
-        });
-    }
-    setTimeout(function() {
-        if (!document.getElementById("ai_assistant_fab")) {
-            createFab();
-        }
-    }, 3000);
-    
-})();
