@@ -154,23 +154,6 @@ class TestAIAssistantServiceWebSearch(TransactionCase):
         self.assertEqual(sources, [])
 
 
-class TestAIAssistantServiceTTS(TransactionCase):
-
-    def setUp(self):
-        super().setUp()
-        self.service = self.env["ai.assistant.service"]
-
-    def test_generate_tts_no_edge_tts(self):
-        with patch("odoo.addons.odoo_ai_assistant.models.ai_chat.edge_tts", None):
-            result = self.service.generate_tts("Hola mundo")
-            self.assertFalse(result)
-
-    def test_get_available_tts_voices_no_edge_tts(self):
-        with patch("odoo.addons.odoo_ai_assistant.models.ai_chat.edge_tts", None):
-            voices = self.service.get_available_tts_voices()
-            self.assertEqual(voices, [])
-
-
 class TestAIAssistantServiceGenerateResponse(TransactionCase):
 
     def setUp(self):

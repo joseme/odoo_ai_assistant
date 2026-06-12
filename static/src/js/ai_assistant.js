@@ -64,11 +64,9 @@ odoo.define("odoo_ai_assistant.AIAssistant", ["web.core", "web.Widget", "web.rpc
             "click .ai_assistant_close": "_onClose",
             "click .ai_assistant_send": "_onSend",
             "keydown .ai_assistant_input": "_onKeyDown",
-            "click .ai_assistant_voice_btn": "_onVoiceInput",
             "click .ai_assistant_new_chat": "_onNewChat",
             "click .ai_assistant_history_item": "_onSelectHistory",
             "click .ai_assistant_delete_chat": "_onDeleteChat",
-            "click .ai_assistant_play_audio": "_onPlayAudio",
             "click .ai_assistant_source_link": "_onSourceLink",
             "click .ai_assistant_history_toggle": "_onHistoryToggle",
             "click .ai_assistant_settings": "_onSettings",
@@ -79,14 +77,12 @@ odoo.define("odoo_ai_assistant.AIAssistant", ["web.core", "web.Widget", "web.rpc
             this._super.apply(this, arguments);
             this.isOpen = false;
             this.isLoading = false;
-            this.isRecording = false;
             this.conversationId = null;
             this.messages = [];
             this.config = {};
             this.conversations = [];
             this.showHistory = false;
             this.currentContext = {};
-            this._audioPlayer = null;
         },
 
         willStart: function () {
@@ -132,8 +128,6 @@ odoo.define("odoo_ai_assistant.AIAssistant", ["web.core", "web.Widget", "web.rpc
                 })
                 .catch(function () {
                     self.config = {
-                        voice_enabled: true,
-                        tts_enabled: true,
                         web_search_enabled: true,
                         welcome_message: "¡Hola! Soy tu asistente de IA en Odoo. ¿En qué puedo ayudarte?",
                     };
@@ -225,7 +219,7 @@ odoo.define("odoo_ai_assistant.AIAssistant", ["web.core", "web.Widget", "web.rpc
                     return;
                 }
                 self.conversationId = result.conversation_id;
-                self._addMessage("assistant", result.response, result.sources, result.tts_attachment_id);
+                self._addMessage("assistant", result.response, result.sources);
             })
             .catch(function (error) {
                 self._setLoading(false);
@@ -254,12 +248,11 @@ odoo.define("odoo_ai_assistant.AIAssistant", ["web.core", "web.Widget", "web.rpc
         // ------------------------------------------------------------------ //
         //  Mensajes
         // ------------------------------------------------------------------ //
-        _addMessage: function (role, content, sources, ttsAttachmentId) {
+        _addMessage: function (role, content, sources) {
             var msg = {
                 role: role,
                 content: content,
                 sources: sources || [],
-                tts_attachment_id: ttsAttachmentId || false,
                 timestamp: new Date(),
             };
             this.messages.push(msg);
@@ -293,16 +286,6 @@ odoo.define("odoo_ai_assistant.AIAssistant", ["web.core", "web.Widget", "web.rpc
             var $meta = $('<div class="ai_assistant_msg_meta"></div>');
             var time = msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
             $meta.text(time);
-
-            // Botón de audio TTS
-            if (msg.role === "assistant" && msg.tts_attachment_id && this.config.tts_enabled) {
-                var $audioBtn = $(
-                    '<button class="ai_assistant_play_audio" title="Escuchar respuesta">' +
-                    '<i class="bi bi-volume-up"></i></button>'
-                );
-                $audioBtn.data("attachment-id", msg.tts_attachment_id);
-                $meta.append($audioBtn);
-            }
 
             // Fuentes
             if (msg.sources && msg.sources.length > 0) {
@@ -424,192 +407,6 @@ odoo.define("odoo_ai_assistant.AIAssistant", ["web.core", "web.Widget", "web.rpc
         },
 
         // ------------------------------------------------------------------ //
-        //  Audio - TTS playback
-        // ------------------------------------------------------------------ //
-        _onPlayAudio: function (ev) {
-            var $btn = $(ev.currentTarget);
-            var attachmentId = $btn.data("attachment-id");
-
-            if (!attachmentId) return;
-
-            // Detener audio actual si está reproduciéndose
-            if (this._audioPlayer) {
-                this._audioPlayer.pause();
-                this._audioPlayer = null;
-                $btn.find("i").removeClass("bi bi-stop-fill").addClass("bi bi-volume-up");
-                return;
-            }
-
-            // Reproducir nuevo audio
-            var audioUrl = "/ai_assistant/audio/" + attachmentId;
-            this._audioPlayer = new Audio(audioUrl);
-            $btn.find("i").removeClass("bi bi-volume-up").addClass("bi bi-stop-fill");
-
-            this._audioPlayer.onended = function () {
-                $btn.find("i").removeClass("bi bi-stop-fill").addClass("bi bi-volume-up");
-                this._audioPlayer = null;
-            }.bind(this);
-
-            this._audioPlayer.onerror = function () {
-                $btn.find("i").removeClass("bi bi-stop-fill").addClass("bi bi-volume-up");
-                this._audioPlayer = null;
-            }.bind(this);
-
-            this._audioPlayer.play().catch(function (e) {
-                console.warn("Error reproduciendo audio:", e);
-                $btn.find("i").removeClass("bi bi-stop-fill").addClass("bi bi-volume-up");
-            });
-        },
-
-        // ------------------------------------------------------------------ //
-        //  Voz - Input con Vosk
-        // ------------------------------------------------------------------ //
-        _onVoiceInput: function () {
-            if (this.isRecording) {
-                this._stopRecording();
-                return;
-            }
-
-            if (!this.config.voice_enabled) {
-                this._addMessage("system", "El reconocimiento de voz no está habilitado.");
-                return;
-            }
-
-            // Intentar usar Web Speech API como fallback si Vosk no está disponible
-            if (this.config.vosk_available === false && "webkitSpeechRecognition" in window) {
-                this._useWebSpeechAPI();
-                return;
-            }
-
-            // Usar Vosk vía MediaRecorder + envío al servidor
-            this._startVoskRecording();
-        },
-
-        _startVoskRecording: function () {
-            var self = this;
-            this.isRecording = true;
-            this.$(".ai_assistant_voice_btn").addClass("recording");
-            this.$(".ai_assistant_voice_btn i").removeClass("bi bi-mic").addClass("bi bi-stop-fill");
-
-            navigator.mediaDevices
-                .getUserMedia({ audio: true })
-                .then(function (stream) {
-                    self._mediaRecorder = new MediaRecorder(stream);
-                    self._audioChunks = [];
-
-                    self._mediaRecorder.ondataavailable = function (event) {
-                        self._audioChunks.push(event.data);
-                    };
-
-                    self._mediaRecorder.onstop = function () {
-                        var audioBlob = new Blob(self._audioChunks, { type: "audio/wav" });
-                        var reader = new FileReader();
-                        reader.onloadend = function () {
-                            var base64Audio = reader.result.split(",")[1];
-                            self._transcribeAudio(base64Audio);
-                        };
-                        reader.readAsDataURL(audioBlob);
-
-                        // Detener stream
-                        stream.getTracks().forEach(function (track) {
-                            track.stop();
-                        });
-                    };
-
-                    self._mediaRecorder.start();
-                })
-                .catch(function (err) {
-                    self.isRecording = false;
-                    self.$(".ai_assistant_voice_btn").removeClass("recording");
-                    self.$(".ai_assistant_voice_btn i").removeClass("bi bi-stop-fill").addClass("bi bi-mic");
-                    self._addMessage("system", "No se pudo acceder al micrófono. Verifica los permisos.");
-                    console.error("Error accediendo al micrófono:", err);
-                });
-        },
-
-        _stopRecording: function () {
-            this.isRecording = false;
-            this.$(".ai_assistant_voice_btn").removeClass("recording");
-            this.$(".ai_assistant_voice_btn i").removeClass("bi bi-stop-fill").addClass("bi bi-mic");
-
-            if (this._mediaRecorder && this._mediaRecorder.state === "recording") {
-                this._mediaRecorder.stop();
-            }
-        },
-
-        _transcribeAudio: function (base64Audio) {
-            var self = this;
-            this._setLoading(true);
-
-            rpc.query({
-                route: "/ai_assistant/transcribe",
-                params: {
-                    audio_base64: base64Audio,
-                    sample_rate: 16000,
-                },
-            })
-            .then(function (result) {
-                self._setLoading(false);
-                if (result.error) {
-                    self._addMessage("system", result.error);
-                    return;
-                }
-                if (result.text) {
-                    self.$input.val(result.text);
-                    self.$input.focus();
-                    self._onInputChange();
-                }
-            })
-            .catch(function (error) {
-                self._setLoading(false);
-                self._addMessage("system", "Error en la transcripción de voz.");
-                console.error("Transcription error:", error);
-            });
-        },
-
-        _useWebSpeechAPI: function () {
-            // Fallback: Web Speech API del navegador
-            var self = this;
-            var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-            if (!SpeechRecognition) {
-                this._addMessage("system", "Tu navegador no soporta reconocimiento de voz.");
-                return;
-            }
-
-            var recognition = new SpeechRecognition();
-            recognition.lang = "es-ES";
-            recognition.continuous = false;
-            recognition.interimResults = false;
-
-            this.isRecording = true;
-            this.$(".ai_assistant_voice_btn").addClass("recording");
-            this.$(".ai_assistant_voice_btn i").removeClass("bi bi-mic").addClass("bi bi-stop-fill");
-
-            recognition.onresult = function (event) {
-                var text = event.results[0][0].transcript;
-                self.$input.val(text);
-                self.$input.focus();
-                self._onInputChange();
-            };
-
-            recognition.onerror = function (event) {
-                console.warn("Speech recognition error:", event.error);
-                if (event.error !== "no-speech") {
-                    self._addMessage("system", "Error en el reconocimiento de voz: " + event.error);
-                }
-            };
-
-            recognition.onend = function () {
-                self.isRecording = false;
-                self.$(".ai_assistant_voice_btn").removeClass("recording");
-                self.$(".ai_assistant_voice_btn i").removeClass("bi bi-stop-fill").addClass("bi bi-mic");
-            };
-
-            recognition.start();
-        },
-
-        // ------------------------------------------------------------------ //
         //  Historial de conversaciones
         // ------------------------------------------------------------------ //
         _loadConversations: function () {
@@ -682,7 +479,7 @@ odoo.define("odoo_ai_assistant.AIAssistant", ["web.core", "web.Widget", "web.rpc
                     } catch (e) {
                         // Ignorar error de parseo
                     }
-                    self._addMessage(msg.role, msg.content, sources, msg.audio_url ? msg.id : false);
+                    self._addMessage(msg.role, msg.content, sources);
                 });
 
                 self.showHistory = false;
@@ -790,13 +587,6 @@ odoo.define("odoo_ai_assistant.AIAssistant", ["web.core", "web.Widget", "web.rpc
         },
 
         destroy: function () {
-            if (this._audioPlayer) {
-                this._audioPlayer.pause();
-                this._audioPlayer = null;
-            }
-            if (this._mediaRecorder && this._mediaRecorder.state === "recording") {
-                this._mediaRecorder.stop();
-            }
             this._super.apply(this, arguments);
         },
     });

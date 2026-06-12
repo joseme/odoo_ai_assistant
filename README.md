@@ -1,6 +1,6 @@
 # Odoo AI Assistant
 
-Asistente de IA integrado en Odoo con chat flotante, reconocimiento de voz local y respuesta hablada. Compatible con Odoo 17, 18 y 19.
+Asistente de IA integrado en Odoo con chat flotante. Compatible con Odoo 17, 18 y 19.
 
 ## Características
 
@@ -10,20 +10,6 @@ Asistente de IA integrado en Odoo con chat flotante, reconocimiento de voz local
 - Formato Markdown en las respuestas (código, listas, encabezados, negritas, etc.)
 - Botón flotante (FAB) accesible desde cualquier pantalla de Odoo
 - Integración en la barra de systray de Odoo
-
-### Input de Voz (Vosk)
-- **Reconocimiento de voz 100% local** con Vosk - no se envía audio a servicios externos
-- Soporte para español (modelo vosk-model-small-es-0.42)
-- Fallback automático a Web Speech API del navegador si Vosk no está disponible
-- Indicador visual de grabación en tiempo real
-- Auto-detención después de 60 segundos
-
-### Respuesta Hablada (edge-tts)
-- **Voces neuronales de Microsoft Edge** - gratis y de alta calidad
-- Voces disponibles en múltiples idiomas (español, inglés, francés, portugués, etc.)
-- Voz por defecto: es-MX-JorgeNeural
-- Reproducción de audio directamente en el chat
-- Configuración de voz e idioma desde Ajustes
 
 ### Contexto Automático
 - Detecta automáticamente el **módulo**, **modelo** y **registro** que el usuario está viendo
@@ -55,28 +41,16 @@ sudo bash install.sh
 1. **Instalar dependencias de Python:**
 
 ```bash
-pip install duckduckgo-search edge-tts vosk nest-asyncio
+pip install duckduckgo-search nest-asyncio
 ```
 
-2. **Descargar modelo de Vosk (para reconocimiento de voz local):**
-
-```bash
-sudo mkdir -p /opt/vosk-models
-cd /opt/vosk-models
-wget https://alphacephei.com/vosk/models/vosk-model-small-es-0.42.zip
-unzip vosk-model-small-es-0.42.zip
-rm vosk-model-small-es-0.42.zip
-```
-
-Modelos disponibles: https://alphacephei.com/vosk/models
-
-3. **Copiar el módulo a la carpeta de addons de Odoo:**
+2. **Copiar el módulo a la carpeta de addons de Odoo:**
 
 ```bash
 cp -r odoo_ai_assistant /ruta/de/addons/de/odoo/
 ```
 
-4. **Reiniciar Odoo y actualizar la lista de addons:**
+3. **Reiniciar Odoo y actualizar la lista de addons:**
 
 ```bash
 # Reiniciar servicio
@@ -86,7 +60,7 @@ sudo systemctl restart odoo
 python3 /opt/odoo/odoo-bin -u odoo_ai_assistant -d tu_base_de_datos
 ```
 
-5. **Instalar el módulo desde la interfaz de Odoo:**
+4. **Instalar el módulo desde la interfaz de Odoo:**
    - Ir a Aplicaciones
    - Buscar "AI Assistant"
    - Hacer clic en Instalar
@@ -105,11 +79,6 @@ python3 /opt/odoo/odoo-bin -u odoo_ai_assistant -d tu_base_de_datos
 |-----------|-------------|-------------------|
 | OpenRouter API Key | Clave API de OpenRouter | (vacío) |
 | Modelo de IA | Modelo de IA a utilizar | openai/gpt-4o-mini |
-| Reconocimiento de voz | Habilitar/deshabilitar voz | Habilitado |
-| Modelo Vosk | Modelo para reconocimiento de voz | vosk-model-small-es-0.42 |
-| Respuesta hablada (TTS) | Habilitar/deshabilitar TTS | Habilitado |
-| Voz TTS | Nombre de la voz edge-tts | es-MX-JorgeNeural |
-| Idioma TTS | Código de idioma para filtrar voces | es |
 | Búsqueda web | Habilitar DuckDuckGo | Habilitado |
 | Búsqueda en Knowledge | Buscar en Knowledge de Odoo | Habilitado |
 | Mensaje de bienvenida | Mensaje al abrir el chat | "¡Hola! Soy tu asistente..." |
@@ -127,26 +96,13 @@ OpenRouter soporta cientos de modelos. Algunos populares:
 - **DeepSeek V4 Flash** - Eficiente
 - **Mistral Large** - Multilingüe
 
-### Voces TTS Recomendadas
-
-| Idioma | Voz | Código |
-|--------|-----|--------|
-| Español (México) | Jorge | es-MX-JorgeNeural |
-| Español (España) | Álvaro | es-ES-AlvaroNeural |
-| Español (España) | Elvira | es-ES-ElviraNeural |
-| Inglés (EE.UU.) | Guy | en-US-GuyNeural |
-| Portugués (Brasil) | Antonio | pt-BR-AntonioNeural |
-| Francés (Francia) | Henri | fr-FR-HenriNeural |
-
 ## Uso
 
 1. **Abrir el chat**: Haz clic en el botón flotante púrpura en la esquina inferior derecha o en el ícono de robot en la barra de systray
 2. **Escribir mensaje**: Escribe tu pregunta en el campo de texto y presiona Enter o el botón de enviar
-3. **Usar voz**: Haz clic en el ícono de micrófono para activar el reconocimiento de voz
-4. **Escuchar respuesta**: Haz clic en el ícono de altavoz junto a la respuesta para escucharla
-5. **Ver fuentes**: Haz clic en "Fuentes" para ver los artículos de Knowledge y resultados web utilizados
-6. **Historial**: Usa el botón de historial para ver conversaciones anteriores
-7. **Nueva conversación**: Usa el botón "+" para iniciar una nueva conversación
+3. **Ver fuentes**: Haz clic en "Fuentes" para ver los artículos de Knowledge y resultados web utilizados
+4. **Historial**: Usa el botón de historial para ver conversaciones anteriores
+5. **Nueva conversación**: Usa el botón "+" para iniciar una nueva conversación
 
 ## Estructura del Módulo
 
@@ -157,7 +113,7 @@ odoo_ai_assistant/
 ├── install.sh                     # Script de instalación
 ├── controllers/
 │   ├── __init__.py
-│   └── ai_chat.py                 # Controladores API (chat, voz, TTS, contexto)
+│   └── ai_chat.py                 # Controladores API (chat, contexto)
 ├── models/
 │   ├── __init__.py
 │   ├── ai_chat.py                 # Modelos de datos y servicio de IA
@@ -170,9 +126,8 @@ odoo_ai_assistant/
 │       ├── css/
 │       │   └── ai_chat.css        # Estilos del chat flotante
 │       ├── js/
-│       │   ├── ai_assistant.js    # Componente principal del chat
-│       │   ├── voice_input.js     # Componente de reconocimiento de voz
-│       │   └── systray.js         # Botón en barra de systray
+│   │   ├── ai_assistant.js    # Componente principal del chat
+│   │   └── systray.js         # Botón en barra de systray
 │       └── xml/
 │           └── ai_chat.xml        # Templates OWL del chat
 ├── security/
@@ -192,10 +147,6 @@ odoo_ai_assistant/
 | `/ai_assistant/conversations` | POST (JSON) | Obtiene la lista de conversaciones |
 | `/ai_assistant/conversation/<id>` | GET (JSON) | Obtiene los mensajes de una conversación |
 | `/ai_assistant/conversation/<id>/delete` | POST (JSON) | Elimina una conversación |
-| `/ai_assistant/audio/<attachment_id>` | GET (HTTP) | Obtiene el archivo de audio TTS |
-| `/ai_assistant/transcribe` | POST (JSON) | Transcribe audio con Vosk |
-| `/ai_assistant/tts` | POST (JSON) | Genera audio TTS desde texto |
-| `/ai_assistant/tts_voices` | GET (JSON) | Lista voces TTS disponibles |
 | `/ai_assistant/config` | GET (JSON) | Obtiene configuración del asistente |
 | `/ai_assistant/context` | POST (JSON) | Obtiene contexto de la página actual |
 
@@ -212,14 +163,7 @@ odoo_ai_assistant/
 ### Python (requeridas)
 - `requests` - Cliente HTTP para API de OpenRouter
 - `duckduckgo-search` >= 4.0.0 - Búsqueda web con DuckDuckGo
-- `edge-tts` >= 6.1.0 - Text-to-Speech con voces de Microsoft Edge
-- `vosk` >= 0.3.44 - Reconocimiento de voz offline
 - `nest-asyncio` >= 1.5.0 - Soporte async anidado en Odoo
-
-### Modelos Vosk (opcionales)
-- `vosk-model-small-es-0.42` - Español (pequeño, ~40MB)
-- `vosk-model-es-0.42` - Español (grande, ~1.3GB, mayor precisión)
-- `vosk-model-small-en-us-0.15` - Inglés (pequeño)
 
 ### Odoo
 - Módulo `base` (requerido)
@@ -232,22 +176,6 @@ odoo_ai_assistant/
 - Ve a Configuración > Ajustes > AI Assistant
 - Ingresa tu API Key de OpenRouter
 - Obtén una en: https://openrouter.ai/keys
-
-### Error: "Modelo Vosk no encontrado"
-- Descarga el modelo de Vosk desde https://alphacephei.com/vosk/models
-- Colócalo en `/opt/vosk-models/`
-- O configura otra ruta en Ajustes > Modelo Vosk
-
-### El reconocimiento de voz no funciona
-- Verifica que Vosk esté instalado: `pip show vosk`
-- Verifica que el modelo esté descargado en `/opt/vosk-models/`
-- El navegador requiere permisos de micrófono (HTTPS o localhost)
-- Si Vosk no está disponible, se usa automáticamente Web Speech API (requiere Chrome/Edge)
-
-### El TTS no genera audio
-- Verifica que edge-tts esté instalado: `pip show edge-tts`
-- Verifica que TTS esté habilitado en Ajustes
-- Revisa los logs de Odoo para errores: `tail -f /var/log/odoo/odoo-server.log`
 
 ### El chat no aparece
 - Verifica que el módulo esté instalado correctamente

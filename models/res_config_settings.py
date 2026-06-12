@@ -79,32 +79,6 @@ class ResConfigSettings(models.TransientModel):
             "ai_assistant.model_name", actual_model
         )
 
-    # --- Voice Configuration ---
-    ai_assistant_tts_voice = fields.Char(
-        string="Voz TTS",
-        config_parameter="ai_assistant.tts_voice",
-        default="es-MX-JorgeNeural",
-        help="Nombre de la voz para text-to-speech (edge-tts). Ej: es-MX-JorgeNeural, es-ES-AlvaroNeural",
-    )
-    ai_assistant_tts_language = fields.Char(
-        string="Idioma TTS",
-        config_parameter="ai_assistant.tts_language",
-        default="es",
-        help="Código de idioma para filtrar voces TTS disponibles. Ej: es, en, fr, pt",
-    )
-    ai_assistant_voice_enabled = fields.Boolean(
-        string="Reconocimiento de voz habilitado",
-        config_parameter="ai_assistant.voice_enabled",
-        default=True,
-        help="Habilita el reconocimiento de voz con Vosk (local).",
-    )
-    ai_assistant_tts_enabled = fields.Boolean(
-        string="Respuesta hablada habilitada",
-        config_parameter="ai_assistant.tts_enabled",
-        default=True,
-        help="Habilita la respuesta hablada con edge-tts.",
-    )
-
     # --- Search Configuration ---
     ai_assistant_knowledge_search_mode = fields.Selection(
         [
@@ -156,18 +130,4 @@ class ResConfigSettings(models.TransientModel):
         config_parameter="ai_assistant.max_history",
         default=20,
         help="Número máximo de mensajes de historial enviados al LLM.",
-    )
-
-    # --- Vosk Configuration ---
-    ai_assistant_vosk_model_path = fields.Char(
-        string="Ruta modelos Vosk",
-        config_parameter="ai_assistant.vosk_model_path",
-        default="/opt/vosk-models",
-        help="Ruta base donde se encuentran los modelos de Vosk. Ej: /opt/vosk-models",
-    )
-    ai_assistant_vosk_model = fields.Char(
-        string="Modelo Vosk",
-        config_parameter="ai_assistant.vosk_model",
-        default="vosk-model-small-es-0.42",
-        help="Nombre del modelo de Vosk para reconocimiento de voz. Ej: vosk-model-small-es-0.42",
     )

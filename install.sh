@@ -25,41 +25,19 @@ fi
 # ---------------------------------------------------------- #
 # 1. Instalar dependencias de Python
 # ---------------------------------------------------------- #
-echo -e "${GREEN}[1/5] Instalando dependencias de Python...${NC}"
+echo -e "${GREEN}[1/4] Instalando dependencias de Python...${NC}"
 
-pip3 install duckduckgo-search edge-tts vosk nest-asyncio 2>/dev/null || {
+pip3 install duckduckgo-search nest-asyncio 2>/dev/null || {
     echo -e "${YELLOW}Intentando con pip...${NC}"
-    pip install duckduckgo-search edge-tts vosk nest-asyncio
+    pip install duckduckgo-search nest-asyncio
 }
 
 echo -e "${GREEN}  ✓ Dependencias de Python instaladas${NC}"
 
 # ---------------------------------------------------------- #
-# 2. Descargar modelo de Vosk para reconocimiento de voz
+# 2. Instalar el módulo en Odoo
 # ---------------------------------------------------------- #
-echo -e "${GREEN}[2/5] Descargando modelo de Vosk para reconocimiento de voz...${NC}"
-
-VOSK_MODELS_DIR="/opt/vosk-models"
-VOSK_MODEL="vosk-model-small-es-0.42"
-VOSK_URL="https://alphacephei.com/vosk/models/${VOSK_MODEL}.zip"
-
-mkdir -p "${VOSK_MODELS_DIR}"
-
-if [ -d "${VOSK_MODELS_DIR}/${VOSK_MODEL}" ]; then
-    echo -e "${YELLOW}  Modelo Vosk ya existe, omitiendo descarga${NC}"
-else
-    echo "  Descargando ${VOSK_MODEL}..."
-    TEMP_DIR=$(mktemp -d)
-    wget -q "${VOSK_URL}" -O "${TEMP_DIR}/model.zip" || curl -sL "${VOSK_URL}" -o "${TEMP_DIR}/model.zip"
-    unzip -q "${TEMP_DIR}/model.zip" -d "${VOSK_MODELS_DIR}"
-    rm -rf "${TEMP_DIR}"
-    echo -e "${GREEN}  ✓ Modelo Vosk descargado en ${VOSK_MODELS_DIR}/${VOSK_MODEL}${NC}"
-fi
-
-# ---------------------------------------------------------- #
-# 3. Instalar el módulo en Odoo
-# ---------------------------------------------------------- #
-echo -e "${GREEN}[3/5] Instalando módulo en Odoo...${NC}"
+echo -e "${GREEN}[2/4] Instalando módulo en Odoo...${NC}"
 
 # Detectar ruta de addons de Odoo
 ODOO_ADDONS_PATHS=(
@@ -101,29 +79,24 @@ if [ "$INSTALLED" = false ]; then
 fi
 
 # ---------------------------------------------------------- #
-# 4. Actualizar lista de addons
+# 3. Actualizar lista de addons
 # ---------------------------------------------------------- #
-echo -e "${GREEN}[4/5] Actualizando lista de addons de Odoo...${NC}"
+echo -e "${GREEN}[3/4] Actualizando lista de addons de Odoo...${NC}"
 
 echo -e "${YELLOW}  Nota: Necesitas reiniciar Odoo con el flag -u para actualizar la lista de addons.${NC}"
 echo "  Ejemplo: systemctl restart odoo"
 echo "  O: python3 /opt/odoo/odoo-bin -u odoo_ai_assistant -d TU_BASE_DE_DATOS"
 
 # ---------------------------------------------------------- #
-# 5. Verificación
+# 4. Verificación
 # ---------------------------------------------------------- #
-echo -e "${GREEN}[5/5] Verificando instalación...${NC}"
+echo -e "${GREEN}[4/4] Verificando instalación...${NC}"
 
 ERRORS=0
 
 # Verificar Python
 python3 -c "import requests" 2>/dev/null && echo -e "  ✓ requests" || { echo -e "  ${RED}✗ requests${NC}"; ERRORS=$((ERRORS+1)); }
 python3 -c "from duckduckgo_search import DDGS" 2>/dev/null && echo -e "  ✓ duckduckgo-search" || { echo -e "  ${RED}✗ duckduckgo-search${NC}"; ERRORS=$((ERRORS+1)); }
-python3 -c "import edge_tts" 2>/dev/null && echo -e "  ✓ edge-tts" || { echo -e "  ${RED}✗ edge-tts${NC}"; ERRORS=$((ERRORS+1)); }
-python3 -c "import vosk" 2>/dev/null && echo -e "  ✓ vosk" || { echo -e "  ${RED}✗ vosk${NC}"; ERRORS=$((ERRORS+1)); }
-
-# Verificar modelo Vosk
-[ -d "${VOSK_MODELS_DIR}/${VOSK_MODEL}" ] && echo -e "  ✓ Modelo Vosk" || { echo -e "  ${YELLOW}⚠ Modelo Vosk no encontrado${NC}"; }
 
 echo ""
 echo "============================================"

@@ -31,12 +31,10 @@ PASO 1: PREPARAR ARCHIVOS
 3. Crea el Dockerfile en odoo17-docker/odoo/Dockerfile:
    FROM odoo:17
    USER root
-   RUN pip install --no-cache-dir \
-       'duckduckgo-search>=4.0.0' \
-       'edge-tts>=6.1.0' \
-       'nest-asyncio>=1.5.0' \
-       'vosk>=0.3.44' \
-       'lxml_html_clean'
+    RUN pip install --no-cache-dir \
+        'duckduckgo-search>=4.0.0' \
+        'nest-asyncio>=1.5.0' \
+        'lxml_html_clean'
    USER odoo
    EXPOSE 8069
 
@@ -67,7 +65,7 @@ services:
     volumes:
       - odoo-web-data:/var/lib/odoo
       - ./custom-addons:/mnt/extra-addons
-      - /opt/vosk-models:/opt/vosk-models:ro
+
     environment:
       - HOST=odoo-db
       - PORT=5432
@@ -107,14 +105,7 @@ PASO 4: CREAR BASE DE DATOS E INSTALAR MÓDULO
       --addons-path=/mnt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons \
       --stop-after-init -i odoo_ai_assistant
 
-PASO 5: DESCARGAR MODELO VOSK (para voz offline)
-----------------------------------------------
-mkdir -p /opt/vosk-models
-wget https://alphacephei.com/vosk/models/vosk-model-small-es-0.42.zip -P /opt/vosk-models/
-unzip /opt/vosk-models/vosk-model-small-es-0.42.zip -d /opt/vosk-models/
-rm /opt/vosk-models/vosk-model-small-es-0.42.zip
-
-PASO 6: CONFIGURAR API KEY DE OPENROUTER
+PASO 5: CONFIGURAR API KEY DE OPENROUTER
 ---------------------------------------
 1. Accede a http://<servidor>:8069
 2. Inicia sesion con admin / admin
@@ -163,11 +154,6 @@ Error de API Key:
 1. Verifica que la API Key sea correcta en Ajustes > AI Assistant Settings
 2. La clave debe empezar con 'sk-or-'
 
-Error de voz:
-1. Verifica los permisos del microfono
-2. Vosk requiere modelo descargado en /opt/vosk-models
-3. El contenedor debe tener montado /opt/vosk-models como volumen
-
 Error "password authentication failed":
 1. Ejecuta en la DB: ALTER USER odoo WITH PASSWORD '<tu_password>';
 2. O cambia pg_hba.conf de scram-sha-256 a trust (ver Paso 4.1)
@@ -181,7 +167,6 @@ NOTAS ADICIONALES
 - Compatible con Odoo 17, 18 y 19
 - Requiere acceso a internet para la API de OpenRouter
 - Los datos de conversacion se almacenan en la base de datos
-- El audio TTS se guarda como adjuntos (limpieza automatica diaria)
 - Puerto por defecto: 8069
 - Usuario por defecto: admin / admin (configurar en primer inicio)
 - El FAB (🤖) aparece en la esquina inferior derecha SOLO despues de iniciar sesion

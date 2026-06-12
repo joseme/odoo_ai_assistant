@@ -12,26 +12,6 @@
         <field name="value">openai/gpt-4o-mini</field>
     </record>
 
-    <record id="default_tts_voice" model="ir.config_parameter">
-        <field name="key">ai_assistant.tts_voice</field>
-        <field name="value">es-MX-JorgeNeural</field>
-    </record>
-
-    <record id="default_tts_language" model="ir.config_parameter">
-        <field name="key">ai_assistant.tts_language</field>
-        <field name="value">es</field>
-    </record>
-
-    <record id="default_voice_enabled" model="ir.config_parameter">
-        <field name="key">ai_assistant.voice_enabled</field>
-        <field name="value">True</field>
-    </record>
-
-    <record id="default_tts_enabled" model="ir.config_parameter">
-        <field name="key">ai_assistant.tts_enabled</field>
-        <field name="value">True</field>
-    </record>
-
     <record id="default_web_search_enabled" model="ir.config_parameter">
         <field name="key">ai_assistant.web_search_enabled</field>
         <field name="value">True</field>
@@ -50,16 +30,6 @@
     <record id="default_max_history" model="ir.config_parameter">
         <field name="key">ai_assistant.max_history</field>
         <field name="value">20</field>
-    </record>
-
-    <record id="default_vosk_model" model="ir.config_parameter">
-        <field name="key">ai_assistant.vosk_model</field>
-        <field name="value">vosk-model-small-es-0.42</field>
-    </record>
-
-    <record id="default_vosk_model_path" model="ir.config_parameter">
-        <field name="key">ai_assistant.vosk_model_path</field>
-        <field name="value">/opt/vosk-models</field>
     </record>
 
 </odoo>

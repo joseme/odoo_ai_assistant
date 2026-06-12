@@ -66,42 +66,6 @@ odoo.define("odoo_ai_assistant.OwlComponents", ["web.core", "web.rpc"], function
         },
 
         /**
-         * Transcribir audio con Vosk
-         */
-        transcribe: function (audioBase64, sampleRate) {
-            return rpc.query({
-                route: "/ai_assistant/transcribe",
-                params: {
-                    audio_base64: audioBase64,
-                    sample_rate: sampleRate || 16000,
-                },
-            });
-        },
-
-        /**
-         * Generar TTS
-         */
-        generateTTS: function (text, voice) {
-            return rpc.query({
-                route: "/ai_assistant/tts",
-                params: {
-                    text: text,
-                    voice: voice || null,
-                },
-            });
-        },
-
-        /**
-         * Obtener configuración
-         */
-        getConfig: function () {
-            return rpc.query({
-                route: "/ai_assistant/config",
-                params: {},
-            });
-        },
-
-        /**
          * Obtener contexto actual
          */
         getContext: function (model, recordId, action, viewType) {
@@ -113,16 +77,6 @@ odoo.define("odoo_ai_assistant.OwlComponents", ["web.core", "web.rpc"], function
                     action: action,
                     view_type: viewType,
                 },
-            });
-        },
-
-        /**
-         * Obtener voces TTS disponibles
-         */
-        getTTSVoices: function () {
-            return rpc.query({
-                route: "/ai_assistant/tts_voices",
-                params: {},
             });
         },
 

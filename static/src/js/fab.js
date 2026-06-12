@@ -4,10 +4,6 @@
     
     var isOpen = false;
     var conversationId = null;
-    var isRecording = false;
-    var mediaRecorder = null;
-    var audioChunks = [];
-    var recognition = null;
     
     // Convierte Markdown a texto plano: **texto** -> «texto», `codigo` -> 'codigo', etc.
     function markdownToPlain(text) {
@@ -55,8 +51,7 @@
             '</div>' +
             '<div class="aimsgs" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;"></div>' +
             '<div class="aiinputc" style="padding:12px;border-top:1px solid #e2e8f0;display:flex;gap:8px;align-items:center;">' +
-                '<textarea class="aiinp" placeholder="Escribe o usa el micrófono..." rows="1" style="flex:1;padding:12px;border:1px solid #e2e8f0;border-radius:8px;resize:none;font-family:inherit;font-size:14px;"></textarea>' +
-                '<button class="aivoice" title="Entrada por voz" style="background:#f1f5f9;color:#475569;border:none;width:42px;height:42px;border-radius:8px;cursor:pointer;font-size:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">🎤</button>' +
+                '<textarea class="aiinp" placeholder="Escribe un mensaje..." rows="1" style="flex:1;padding:12px;border:1px solid #e2e8f0;border-radius:8px;resize:none;font-family:inherit;font-size:14px;"></textarea>' +
                 '<button class="aisend" style="background:#7c3aed;color:white;border:none;width:48px;height:42px;border-radius:8px;cursor:pointer;font-size:18px;flex-shrink:0;">➤</button>' +
             '</div>';
         
@@ -69,7 +64,6 @@
         w.querySelector(".aiinp").onkeydown = function(e) {
             if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
         };
-        w.querySelector(".aivoice").onclick = toggleVoiceInput;
     }
     
     function toggleWindow() {
@@ -183,213 +177,22 @@
             addMessage("system", "Error: " + err.message);
         });
     }
-    
-    function toggleVoiceInput() {
-        if (isRecording) {
-            stopRecording();
-        } else {
-            // Probar primero con SpeechRecognition del navegador (más rápido)
-            tryBrowserSpeech();
-        }
-    }
-    
-    function tryBrowserSpeech() {
-        var w = document.getElementById("ai_assistant_window");
-        var btn = w.querySelector(".aivoice");
-        
-        var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRec) {
-            // Sin Speech API, ir directo a grabación
-            startRecordingWithVosk();
-            return;
-        }
-        
-        isRecording = true;
-        btn.style.background = "#ef4444";
-        btn.style.color = "white";
-        btn.textContent = "⏹";
-        btn.title = "Detener grabación";
-        addMessage("system", "🎤 Escuchando...");
-        
-        var finalTranscript = "";
-        var noResultTimeout = null;
-        recognition = new SpeechRec();
-        recognition.lang = "es-ES";
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        
-        recognition.onresult = function(event) {
-            if (noResultTimeout) {
-                clearTimeout(noResultTimeout);
-                noResultTimeout = null;
-            }
-            var interim = "";
-            for (var i = event.resultIndex; i < event.results.length; i++) {
-                var r = event.results[i];
-                if (r.isFinal) {
-                    finalTranscript += r[0].transcript + " ";
-                } else {
-                    interim += r[0].transcript;
-                }
-            }
-            w.querySelector(".aiinp").value = finalTranscript + interim;
-        };
-        
-        recognition.onerror = function(event) {
-            console.error("SpeechRecognition error:", event.error);
-            if (noResultTimeout) clearTimeout(noResultTimeout);
-            if (event.error === "network" || event.error === "not-allowed" || event.error === "service-not-allowed") {
-                stopBrowserSpeech(true);
-                addMessage("system", "🎤 Reconocimiento online no disponible. Usando grabación offline...");
-                startRecordingWithVosk();
-            } else if (event.error !== "no-speech" && event.error !== "aborted") {
-                stopBrowserSpeech(true);
-                addMessage("system", "🎤 Error de voz: " + event.error + ". Intentando grabación offline...");
-                startRecordingWithVosk();
-            }
-        };
-        
-        recognition.onend = function() {
-            if (isRecording && recognition) {
-                try { recognition.start(); } catch(e) {}
-            }
-        };
-        
-        // Timeout: si en 4s no hay resultado, fallback a Vosk
-        noResultTimeout = setTimeout(function() {
-            if (!isRecording) return;
-            console.log("SpeechRecognition: sin detección en 4s, fallback a Vosk");
-            window._aiVoiceTimeout = null;
-            stopBrowserSpeech(true);
-            addMessage("system", "🎤 Reconocimiento online sin respuesta. Usando grabación offline...");
-            startRecordingWithVosk();
-        }, 4000);
-        window._aiVoiceTimeout = noResultTimeout;
-        
-        try {
-            recognition.start();
-        } catch(e) {
-            stopBrowserSpeech(true);
-            startRecordingWithVosk();
-        }
-    }
-    
-    function stopBrowserSpeech(silent) {
-        if (recognition) {
-            try { recognition.stop(); } catch(e) {}
-            recognition = null;
-        }
-        if (!silent) {
-            var w = document.getElementById("ai_assistant_window");
-            var inp = w.querySelector(".aiinp");
-            if (inp.value.trim()) {
-                sendMessage();
-            }
-        }
-    }
-    
-    function startRecordingWithVosk() {
-        var w = document.getElementById("ai_assistant_window");
-        var btn = w.querySelector(".aivoice");
-        
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            addMessage("system", "🎤 Tu navegador no soporta grabación de audio.");
-            resetVoiceButton();
-            return;
-        }
-        
-        navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(function(stream) {
-            audioChunks = [];
-            btn.style.background = "#ef4444";
-            btn.style.color = "white";
-            btn.textContent = "⏹";
-            btn.title = "Detener grabación";
-            addMessage("system", "🎤 Grabando...");
-            
-            var mime = 'audio/webm';
-            if (!MediaRecorder.isTypeSupported(mime)) mime = 'audio/ogg';
-            
-            mediaRecorder = new MediaRecorder(stream, { mimeType: mime });
-            mediaRecorder.ondataavailable = function(event) {
-                if (event.data.size > 0) audioChunks.push(event.data);
-            };
-            mediaRecorder.onstop = function() {
-                stream.getTracks().forEach(function(t) { t.stop(); });
-                var blob = new Blob(audioChunks, { type: mime });
-                sendAudioToVosk(blob, w);
-            };
-            mediaRecorder.start();
-        })
-        .catch(function(err) {
-            console.error("Mic error:", err);
-            if (err.name === "NotAllowedError") {
-                addMessage("system", "🎤 Permiso de micrófono denegado. Concede permiso en la barra de direcciones.");
-            } else {
-                addMessage("system", "🎤 Error: " + err.message + ". Verifica el micrófono.");
-            }
-            resetVoiceButton();
-        });
-    }
-    
-    function sendAudioToVosk(blob, w) {
-        addMessage("system", "🔄 Transcribiendo audio...");
-        
-        fetch("/ai_assistant/transcribe", {
-            method: "POST",
-            body: blob
-        })
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            if (data.text) {
-                var inp = w.querySelector(".aiinp");
-                inp.value = data.text;
-                // Enviar automáticamente
-                sendMessage();
-            } else if (data.error) {
-                addMessage("system", "Error de voz: " + data.error);
-            } else {
-                addMessage("system", "🎤 No se detectó texto. Intenta de nuevo.");
-            }
-        })
-        .catch(function(err) {
-            addMessage("system", "Error al transcribir: " + err.message);
-        });
-    }
-    
-    function stopRecording() {
-        isRecording = false;
-        // Cancelar timeout de fallback si existe
-        if (window._aiVoiceTimeout) {
-            clearTimeout(window._aiVoiceTimeout);
-            window._aiVoiceTimeout = null;
-        }
-        // Detener browser speech si está activo
-        if (recognition) {
-            stopBrowserSpeech(false);
-        }
-        // Detener MediaRecorder si está activo
-        if (mediaRecorder && mediaRecorder.state !== "inactive") {
-            mediaRecorder.stop();
-            mediaRecorder = null;
-        }
-        resetVoiceButton();
-    }
-    
-    function resetVoiceButton() {
-        var w = document.getElementById("ai_assistant_window");
-        if (w) {
-            var btn = w.querySelector(".aivoice");
-            if (btn) {
-                btn.style.background = "#f1f5f9";
-                btn.style.color = "#475569";
-                btn.textContent = "🎤";
-                btn.title = "Entrada por voz";
-            }
-        }
-    }
-    
+
     // Init
+    if (document.body) {
+        createFab();
+    } else {
+        document.addEventListener("DOMContentLoaded", function() {
+            createFab();
+        });
+    }
+    setTimeout(function() {
+        if (!document.getElementById("ai_assistant_fab")) {
+            createFab();
+        }
+    }, 3000);
+    
+})();
     if (document.body) {
         createFab();
     } else {

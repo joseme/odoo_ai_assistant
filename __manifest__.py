@@ -8,7 +8,7 @@
         Asistente de IA para Odoo
         =========================
 
-        Chat con IA, voz, TTS y contexto automático.
+        Chat con IA y contexto automático.
     """,
     "author": "AI Assistant Dev",
     "website": "https://github.com/odoo-ai-assistant",
@@ -17,15 +17,12 @@
     "external_dependencies": {
         "python": [
             "duckduckgo-search",
-            "edge-tts",
-            "vosk",
         ],
     },
     "data": [
         "security/security.xml",
         "security/ir_rule.xml",
         "security/ir.model.access.csv",
-        "data/cron_cleanup.xml",
         "views/ai_chat_views.xml",
         "views/res_config_settings_views.xml",
     ],

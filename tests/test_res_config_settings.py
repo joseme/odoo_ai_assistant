@@ -64,14 +64,6 @@ class TestResConfigSettings(TransactionCase):
         })
         self.assertFalse(settings.ai_assistant_custom_model_visible)
 
-    def test_default_tts_voice(self):
-        current = self.IrConfig.get_param("ai_assistant.tts_voice", "es-MX-JorgeNeural")
-        self.assertEqual(current, "es-MX-JorgeNeural")
-
-    def test_default_voice_enabled(self):
-        current = self.IrConfig.get_param("ai_assistant.voice_enabled", "True")
-        self.assertEqual(current, "True")
-
     def test_default_web_search_enabled(self):
         current = self.IrConfig.get_param("ai_assistant.web_search_enabled", "True")
         self.assertEqual(current, "True")

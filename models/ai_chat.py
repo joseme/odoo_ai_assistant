@@ -2,10 +2,6 @@ import asyncio
 import json
 import logging
 import re
-import base64
-import os
-import tempfile
-from datetime import datetime
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
@@ -17,12 +13,6 @@ try:
 except ImportError:
     DDGS = None
     _logger.warning("duckduckgo-search no está instalado. Instale con: pip install duckduckgo-search")
-
-try:
-    import edge_tts
-except ImportError:
-    edge_tts = None
-    _logger.warning("edge-tts no está instalado. Instale con: pip install edge-tts")
 
 try:
     import nest_asyncio
@@ -132,23 +122,10 @@ class AIChatMessage(models.Model):
         string="Fuentes",
         help="Fuentes utilizadas para generar la respuesta (Knowledge, DuckDuckGo, etc.)",
     )
-    audio_attachment_id = fields.Many2one(
-        "ir.attachment",
-        string="Audio de respuesta",
-    )
-    has_audio = fields.Boolean(
-        string="Tiene audio",
-        compute="_compute_has_audio",
-    )
     create_date = fields.Datetime(
         string="Fecha",
         readonly=True,
     )
-
-    @api.depends("audio_attachment_id")
-    def _compute_has_audio(self):
-        for msg in self:
-            msg.has_audio = bool(msg.audio_attachment_id)
 
 
 class AIAssistantService(models.AbstractModel):
@@ -582,63 +559,6 @@ El usuario está viendo esta página de Odoo. Usa este contexto para dar respues
             return "", []
 
     # ------------------------------------------------------------------ #
-    #  TTS - Text-to-Speech con edge-tts
-    # ------------------------------------------------------------------ #
-    @api.model
-    def generate_tts(self, text, voice=None):
-        """Genera audio a partir de texto usando edge-tts.
-
-        Args:
-            text: Texto a convertir en audio
-            voice: Nombre de la voz (opcional, usa la configurada por defecto)
-
-        Returns:
-            ID del attachment creado con el audio
-        """
-        if edge_tts is None:
-            _logger.warning("edge-tts no está instalado. No se puede generar audio.")
-            return False
-
-        if not voice:
-            voice = self.env["ir.config_parameter"].sudo().get_param(
-                "ai_assistant.tts_voice", "es-MX-JorgeNeural"
-            )
-
-        try:
-            # Crear archivo temporal para el audio
-            with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tmp_file:
-                tmp_path = tmp_file.name
-
-            # Generar audio con edge-tts
-            async def _generate():
-                communicate = edge_tts.Communicate(text, voice)
-                await communicate.save(tmp_path)
-
-            self._run_async(_generate())
-
-            # Leer el archivo de audio y crear attachment
-            with open(tmp_path, "rb") as f:
-                audio_data = f.read()
-
-            # Limpiar archivo temporal
-            os.unlink(tmp_path)
-
-            # Crear attachment en Odoo
-            attachment = self.env["ir.attachment"].sudo().create({
-                "name": f"ai_tts_{datetime.now().strftime('%Y%m%d%H%M%S')}.mp3",
-                "type": "binary",
-                "datas": base64.b64encode(audio_data),
-                "res_model": "ai.chat.message",
-                "mimetype": "audio/mpeg",
-            })
-
-            return attachment.id
-
-        except Exception as e:
-            _logger.error("Error al generar TTS: %s", str(e))
-            return False
-
-    # ------------------------------------------------------------------ #
     #  Contexto - Obtener información contextual de Odoo
     # ------------------------------------------------------------------ #
     @api.model
@@ -721,35 +641,3 @@ El usuario está viendo esta página de Odoo. Usa este contexto para dar respues
         # Normalizar espacios
         text = re.sub(r"\s+", " ", text).strip()
         return text
-
-    @api.model
-    def get_available_tts_voices(self):
-        """Obtiene las voces TTS disponibles para el idioma configurado."""
-        if edge_tts is None:
-            return []
-
-        try:
-            async def _get_voices():
-                voices = await edge_tts.list_voices()
-                return voices
-
-            voices = self._run_async(_get_voices())
-
-            # Filtrar voces en español
-            lang = self.env["ir.config_parameter"].sudo().get_param(
-                "ai_assistant.tts_language", "es"
-            )
-            filtered = [v for v in voices if v["Locale"].startswith(lang)]
-
-            return [
-                {
-                    "name": v["ShortName"],
-                    "display_name": f"{v['FriendlyName']} ({v['Locale']})",
-                    "gender": v["Gender"],
-                }
-                for v in filtered
-            ]
-
-        except Exception as e:
-            _logger.warning("Error al obtener voces TTS: %s", str(e))
-            return []

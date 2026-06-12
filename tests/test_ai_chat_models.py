@@ -1,5 +1,3 @@
-import base64
-
 from odoo.tests import TransactionCase
 from odoo.exceptions import UserError
 
@@ -133,7 +131,6 @@ class TestAIChatMessage(TransactionCase):
             "content": "Puedo ayudarte con Odoo.",
         })
         self.assertEqual(msg.role, "assistant")
-        self.assertFalse(msg.has_audio)
         self.assertFalse(msg.sources)
 
     def test_create_system_message(self):
@@ -166,30 +163,6 @@ class TestAIChatMessage(TransactionCase):
         messages = self.conv.message_ids
         self.assertEqual(messages[0].content, "Primero")
         self.assertEqual(messages[1].content, "Segundo")
-
-    def test_has_audio_false_by_default(self):
-        msg = self.Message.create({
-            "conversation_id": self.conv.id,
-            "role": "assistant",
-            "content": "Sin audio",
-        })
-        self.assertFalse(msg.has_audio)
-
-    def test_has_audio_with_attachment(self):
-        attachment = self.env["ir.attachment"].create({
-            "name": "test.mp3",
-            "type": "binary",
-            "datas": base64.b64encode(b"fakeaudiodata").decode(),
-            "res_model": "ai.chat.message",
-            "mimetype": "audio/mpeg",
-        })
-        msg = self.Message.create({
-            "conversation_id": self.conv.id,
-            "role": "assistant",
-            "content": "Con audio",
-            "audio_attachment_id": attachment.id,
-        })
-        self.assertTrue(msg.has_audio)
 
     def test_sources_field(self):
         msg = self.Message.create({

@@ -49,7 +49,6 @@
                                            decoration-success="role == 'assistant'"
                                            decoration-warning="role == 'system'"/>
                                     <field name="content" widget="text"/>
-                                    <field name="has_audio"/>
                                     <field name="create_date"/>
                                 </tree>
                             </field>
@@ -118,12 +117,7 @@
                         <group>
                             <field name="conversation_id"/>
                             <field name="role"/>
-                            <field name="has_audio"/>
                             <field name="create_date"/>
-                        </group>
-                        <group>
-                            <field name="audio_attachment_id"
-                                   invisible="has_audio == False"/>
                         </group>
                     </group>
                     <group string="Contenido">

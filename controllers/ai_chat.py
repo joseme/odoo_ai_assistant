@@ -1,35 +1,12 @@
 import json
 import logging
 import base64
-import asyncio
-import os
-import tempfile
-import struct
 
 from odoo import http
 from odoo.http import request, Response
 from odoo.exceptions import UserError, AccessError
 
 _logger = logging.getLogger(__name__)
-
-# Variable global para cachear el modelo Vosk
-_vosk_model = None
-
-# Intentar importar Vosk
-try:
-    import vosk
-    VOSK_AVAILABLE = True
-    _logger.info("Vosk disponible para reconocimiento de voz offline")
-except ImportError:
-    VOSK_AVAILABLE = False
-    _logger.warning("vosk no está instalado. Instale con: pip install vosk")
-
-try:
-    import edge_tts
-    EDGE_TTS_AVAILABLE = True
-except ImportError:
-    EDGE_TTS_AVAILABLE = False
-    _logger.warning("edge-tts no está instalado. Instale con: pip install edge-tts")
 
 
 class AIChatController(http.Controller):
@@ -178,16 +155,6 @@ class AIChatController(http.Controller):
             "sources": json.dumps(result["sources"]) if result["sources"] else False,
         })
 
-        # Generar TTS si está habilitado
-        tts_enabled = request.env["ir.config_parameter"].sudo().get_param(
-            "ai_assistant.tts_enabled", "True"
-        ) == "True"
-        tts_attachment_id = False
-        if tts_enabled and EDGE_TTS_AVAILABLE:
-            tts_attachment_id = AIAssistantService.sudo().generate_tts(result["response"])
-            if tts_attachment_id:
-                assistant_message.sudo().write({"audio_attachment_id": tts_attachment_id})
-
         # Convertir Markdown de la respuesta a texto plano
         response_text = self._markdown_to_plain(result["response"])
 
@@ -197,7 +164,6 @@ class AIChatController(http.Controller):
                 "sources": result["sources"],
                 "conversation_id": conversation.id,
                 "message_id": assistant_message.id,
-                "tts_attachment_id": tts_attachment_id,
             }),
             headers=[("Content-Type", "application/json")],
         )
@@ -269,112 +235,6 @@ class AIChatController(http.Controller):
         params = request.env["ir.config_parameter"].sudo()
         return {
             "welcome_message": params.get_param("ai_assistant.welcome_message", ""),
-            "tts_enabled": params.get_param("ai_assistant.tts_enabled", "True") == "True",
-            "voice_enabled": params.get_param("ai_assistant.voice_enabled", "True") == "True",
             "web_search_enabled": params.get_param("ai_assistant.web_search_enabled", "True") == "True",
             "knowledge_search_enabled": params.get_param("ai_assistant.knowledge_search_enabled", "True") == "True",
         }
-
-    @http.route("/ai_assistant/tts", type="json", auth="user", methods=["POST"], csrf=False)
-    def generate_tts(self):
-        """Genera audio TTS."""
-        text = request.params.get("text", "")
-        if not text:
-            return {"error": "Texto vacío"}
-        
-        if not EDGE_TTS_AVAILABLE:
-            return {"error": "edge-tts no está instalado"}
-        
-        AIAssistantService = request.env["ai.assistant.service"]
-        attachment_id = AIAssistantService.sudo().generate_tts(text)
-        
-        return {
-            "attachment_id": attachment_id,
-            "audio_url": f"/ai_assistant/audio/{attachment_id}" if attachment_id else None,
-        }
-
-    @http.route("/ai_assistant/audio/<int:attachment_id>", type="http", auth="user")
-    def stream_audio(self, attachment_id):
-        """Serve audio TTS."""
-        attachment = request.env["ir.attachment"].browse(attachment_id).exists()
-        if not attachment:
-            return request.not_found()
-        
-        return request.make_response(
-            base64.b64decode(attachment.datas),
-            headers=[("Content-Type", "audio/mpeg"), ("Content-Disposition", "inline")]
-        )
-
-    # ------------------------------------------------------------------ #
-    #  Voz - Transcripción con Vosk (offline)
-    # ------------------------------------------------------------------ #
-    @http.route("/ai_assistant/transcribe", type="http", auth="user", methods=["POST"], csrf=False)
-    def transcribe_audio(self):
-        """Recibe audio WebM/WAV y lo transcribe con Vosk."""
-        global _vosk_model
-        
-        if not VOSK_AVAILABLE:
-            return request.make_response(
-                json.dumps({"error": "Vosk no está instalado en el servidor"}),
-                headers=[("Content-Type", "application/json")]
-            )
-        
-        # Cargar modelo Vosk (cacheado)
-        if _vosk_model is None:
-            try:
-                model_path = request.env["ir.config_parameter"].sudo().get_param(
-                    "ai_assistant.vosk_model_path", "/opt/vosk-models"
-                )
-                model_name = request.env["ir.config_parameter"].sudo().get_param(
-                    "ai_assistant.vosk_model", "vosk-model-small-es-0.42"
-                )
-                full_path = os.path.join(model_path, model_name)
-                _logger.info("Cargando modelo Vosk desde: %s", full_path)
-                _vosk_model = vosk.Model(full_path)
-            except Exception as e:
-                _logger.error("Error cargando modelo Vosk: %s", e)
-                return request.make_response(
-                    json.dumps({"error": f"Error cargando modelo Vosk: {str(e)}"}),
-                    headers=[("Content-Type", "application/json")]
-                )
-        
-        # Leer audio del body
-        audio_data = request.httprequest.data
-        if not audio_data:
-            return request.make_response(
-                json.dumps({"error": "No se recibió audio"}),
-                headers=[("Content-Type", "application/json")]
-            )
-        
-        try:
-            # Vosk espera PCM 16kHz 16-bit mono
-            # Si es WebM, necesitamos convertirlo - pero por ahora asumimos WAV/PCM
-            rec = vosk.KaldiRecognizer(_vosk_model, 16000)
-            
-            # Si es un archivo WAV, saltar cabecera (44 bytes)
-            if audio_data[:4] == b'RIFF':
-                audio_pcm = audio_data[44:]
-            else:
-                audio_pcm = audio_data
-            
-            # Procesar en chunks para no saturar memoria
-            chunk_size = 4000
-            for i in range(0, len(audio_pcm), chunk_size):
-                chunk = audio_pcm[i:i+chunk_size]
-                rec.AcceptWaveform(chunk)
-            
-            result = json.loads(rec.FinalResult())
-            text = result.get("text", "")
-            
-            _logger.info("Vosk transcripción: '%s'", text[:100])
-            
-            return request.make_response(
-                json.dumps({"text": text, "success": bool(text)}),
-                headers=[("Content-Type", "application/json")]
-            )
-        except Exception as e:
-            _logger.error("Error en transcripción Vosk: %s", e)
-            return request.make_response(
-                json.dumps({"error": f"Error de transcripción: {str(e)}"}),
-                headers=[("Content-Type", "application/json")]
-            )

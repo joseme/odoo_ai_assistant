@@ -30,34 +30,6 @@
                         </div>
                     </setting>
 
-                    <!-- Setting: Reconocimiento de voz -->
-                    <setting string="Reconocimiento de voz"
-                             help="Habilita el reconocimiento de voz local con Vosk">
-                        <field name="ai_assistant_voice_enabled"/>
-                        <div class="content-group" invisible="ai_assistant_voice_enabled == False">
-                            <div class="row mt16">
-                                <label for="ai_assistant_vosk_model" string="Modelo Vosk" class="col-lg-3 o_light_label"/>
-                                <field name="ai_assistant_vosk_model" class="col-lg-9"/>
-                            </div>
-                        </div>
-                    </setting>
-
-                    <!-- Setting: Respuesta hablada -->
-                    <setting string="Respuesta hablada (TTS)"
-                             help="Habilita la respuesta hablada con edge-tts">
-                        <field name="ai_assistant_tts_enabled"/>
-                        <div class="content-group" invisible="ai_assistant_tts_enabled == False">
-                            <div class="row mt16">
-                                <label for="ai_assistant_tts_voice" string="Voz TTS" class="col-lg-3 o_light_label"/>
-                                <field name="ai_assistant_tts_voice" class="col-lg-9"/>
-                            </div>
-                            <div class="row mt8">
-                                <label for="ai_assistant_tts_language" string="Idioma TTS" class="col-lg-3 o_light_label"/>
-                                <field name="ai_assistant_tts_language" class="col-lg-9"/>
-                            </div>
-                        </div>
-                    </setting>
-
                     <!-- Setting: Búsqueda web -->
                     <setting string="Búsqueda web (DuckDuckGo)"
                              help="Habilita la búsqueda en DuckDuckGo para enriquecer respuestas">

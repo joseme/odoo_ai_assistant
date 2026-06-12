@@ -71,9 +71,6 @@
                         rows="1"
                     />
                     <div class="ai_assistant_input_actions">
-                        <button class="ai_assistant_voice_btn" title="Entrada de voz">
-                            <i class="bi-mic"/>
-                        </button>
                         <button class="ai_assistant_send" title="Enviar">
                             <i class="bi-send"/>
                         </button>
@@ -86,16 +83,6 @@
                     </button>
                 </div>
             </div>
-        </div>
-    </t>
-
-    <!-- Componente de input de voz (standalone) -->
-    <t t-name="odoo_ai_assistant.VoiceInput">
-        <div class="ai_voice_container">
-            <button class="ai_voice_btn" title="Hablar">
-                <i class="bi-mic"/>
-            </button>
-            <div class="ai_voice_indicator"/>
         </div>
     </t>
 
