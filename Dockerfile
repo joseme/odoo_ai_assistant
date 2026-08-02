@@ -7,7 +7,8 @@ USER root
 RUN mkdir -p /opt/odoo-libs && \
     pip install --no-cache-dir --target=/opt/odoo-libs \
     'duckduckgo-search>=4.0.0' \
-    'nest-asyncio>=1.5.0'
+    'nest-asyncio>=1.5.0' \
+    'lxml<5'
 USER odoo
 
 # Make packages visible to Odoo's Python

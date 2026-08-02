@@ -71,12 +71,12 @@ class AIChatController(http.Controller):
                 var response = await fetch("/ai_assistant/chat", {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({message: msg, conversation_id: convId})
+                    body: JSON.stringify({jsonrpc: "2.0", method: "call", params: {message: msg, conversation_id: convId}})
                 });
                 var result = await response.json();
                 console.log(">>> Result:", result);
                 messagesDiv.lastChild.remove();
-                // Odoo json responses are wrapped in 'result'
+                // Rutas type="json" de Odoo envuelven la respuesta en 'result'
                 var text = result.result ? (result.result.response || result.error || JSON.stringify(result)) : JSON.stringify(result);
                 addMessage(text, "assistant");
                 convId = result.result ? result.result.conversation_id : convId;
@@ -92,12 +92,14 @@ class AIChatController(http.Controller):
     # ------------------------------------------------------------------ #
     #  Chat - Envío de mensajes
     # ------------------------------------------------------------------ #
-    @http.route("/ai_assistant/chat", type="http", auth="user", methods=["POST"], csrf=False)
-    def chat(self):
-        """Procesa un mensaje del usuario y devuelve la respuesta de la IA."""
-        raw = json.loads(request.httprequest.data)
-        message = raw.get("message", "")
-        conversation_id = raw.get("conversation_id")
+    @http.route("/ai_assistant/chat", type="json", auth="user", methods=["POST"], csrf=False)
+    def chat(self, message="", conversation_id=None, context_info=None, **kwargs):
+        """Procesa un mensaje del usuario y devuelve la respuesta de la IA.
+
+        type="json" para que el frontend use el servicio `rpc` de Odoo:
+        el servicio `http` envía FormData (null → "null", dict → "[object Object]"),
+        mientras que JSON-RPC preserva tipos (None, dict, int).
+        """
         user = request.env.user
         AIAssistantService = request.env["ai.assistant.service"]
 
@@ -131,7 +133,7 @@ class AIChatController(http.Controller):
         history_messages = [{"role": m["role"], "content": m["content"]} for m in history_messages]
 
         # Enriquecer contexto
-        enriched_context = raw.get("context_info", {})
+        enriched_context = context_info or {}
         search_knowledge = request.env["ir.config_parameter"].sudo().get_param(
             "ai_assistant.knowledge_search_enabled", "True"
         ) == "True"
@@ -158,15 +160,12 @@ class AIChatController(http.Controller):
         # Convertir Markdown de la respuesta a texto plano
         response_text = self._markdown_to_plain(result["response"])
 
-        return request.make_response(
-            json.dumps({
-                "response": response_text,
-                "sources": result["sources"],
-                "conversation_id": conversation.id,
-                "message_id": assistant_message.id,
-            }),
-            headers=[("Content-Type", "application/json")],
-        )
+        return {
+            "response": response_text,
+            "sources": result["sources"],
+            "conversation_id": conversation.id,
+            "message_id": assistant_message.id,
+        }
 
     @staticmethod
     def _markdown_to_plain(text):
@@ -210,7 +209,7 @@ class AIChatController(http.Controller):
             order="create_date desc",
             limit=limit,
         )
-        return [{"id": c.id, "name": c.name, "date": c.create_date} for c in conversations]
+        return [{"id": c.id, "title": c.title, "date": c.create_date} for c in conversations]
 
     @http.route("/ai_assistant/conversation/<int:conversation_id>", type="json", auth="user")
     def get_conversation(self, conversation_id):
@@ -229,6 +228,21 @@ class AIChatController(http.Controller):
         )
         return {"conversation_id": conversation_id, "messages": messages}
 
+    @http.route("/ai_assistant/conversation/<int:conversation_id>/delete", type="json", auth="user")
+    def delete_conversation(self, conversation_id):
+        """Elimina una conversación del usuario actual.
+
+        Ruta documentada en AGENTS.md pero nunca implementada; el frontend
+        la llamaba y recibía 404 (error silencioso).
+        """
+        user = request.env.user
+        conversation = request.env["ai.chat.conversation"].search(
+            [("id", "=", conversation_id), ("user_id", "=", user.id)], limit=1
+        )
+        if conversation:
+            conversation.unlink()
+        return {"success": True}
+
     @http.route("/ai_assistant/config", type="json", auth="user")
     def get_config(self):
         """Devuelve configuración para el frontend."""
@@ -238,3 +252,28 @@ class AIChatController(http.Controller):
             "web_search_enabled": params.get_param("ai_assistant.web_search_enabled", "True") == "True",
             "knowledge_search_enabled": params.get_param("ai_assistant.knowledge_search_enabled", "True") == "True",
         }
+
+    @http.route("/ai_assistant/context", type="json", auth="user")
+    def get_context(self, model="", record_id=None, action=None, view_type=None):
+        """Devuelve contexto enriquecido de la página actual.
+
+        La ruta estaba documentada en AGENTS.md pero nunca implementada;
+        el frontend la llamaba y recibía 404 (usaba el contexto local como fallback).
+        """
+        ctx = {
+            "model": model or "",
+            "record_id": record_id,
+            "action": action or "",
+            "view_type": view_type or "",
+            "module": "",
+        }
+        if model and model in request.env:
+            try:
+                ctx["module"] = request.env[model]._module
+                if record_id:
+                    rec = request.env[model].browse(int(record_id))
+                    if rec.exists():
+                        ctx["name"] = rec.display_name
+            except (ValueError, TypeError):
+                pass
+        return ctx

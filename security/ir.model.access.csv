@@ -3,3 +3,5 @@ access_ai_chat_conversation_user,ai.chat.conversation.user,model_ai_chat_convers
 access_ai_chat_message_user,ai.chat.message.user,model_ai_chat_message,group_ai_assistant_user,1,1,1,1
 access_ai_chat_conversation_manager,ai.chat.conversation.manager,model_ai_chat_conversation,group_ai_assistant_manager,1,1,1,1
 access_ai_chat_message_manager,ai.chat.message.manager,model_ai_chat_message,group_ai_assistant_manager,1,1,1,1
+access_ai_chat_conversation_system,ai.chat.conversation.system,model_ai_chat_conversation,base.group_system,1,1,1,1
+access_ai_chat_message_system,ai.chat.message.system,model_ai_chat_message,base.group_system,1,1,1,1

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Fix upstream Odoo 17: web.assets_frontend falla con "$gray-200 undefined"
+        en instalaciones mínimas (sin web_editor). Ver static/src/scss/frontend_fix.scss.
+        sequence < 16 → ir.asset se aplica ANTES de los manifests de los módulos,
+        y `prepend` coloca el archivo al inicio del bundle.
+    -->
+    <record id="ai_assistant_fix_frontend_gray200" model="ir.asset">
+        <field name="name">Fix $gray-200 undefined in web.assets_frontend (minimal installs)</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="directive">prepend</field>
+        <field name="path">odoo_ai_assistant/static/src/scss/frontend_fix.scss</field>
+        <field name="sequence">5</field>
+    </record>
+
+</odoo>

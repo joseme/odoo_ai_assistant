@@ -22,14 +22,16 @@
     "data": [
         "security/security.xml",
         "security/ir.model.access.csv",
+        "data/ir_asset.xml",
         "views/ai_chat_views.xml",
         "views/res_config_settings_views.xml",
     ],
     "post_init_hook": "set_default_config_parameters",
     "assets": {
-        "web.assets_web": [
+        "web.assets_backend": [
             "odoo_ai_assistant/static/src/css/ai_chat.css",
-            "odoo_ai_assistant/static/src/js/fab.js",
+            "odoo_ai_assistant/static/src/components/ai_service.js",
+            "odoo_ai_assistant/static/src/js/ai_assistant.js",
             "odoo_ai_assistant/static/src/js/systray.js",
             "odoo_ai_assistant/static/src/xml/ai_chat.xml",
         ],

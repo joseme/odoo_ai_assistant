@@ -1,5 +1,5 @@
-def set_default_config_parameters(cr, registry):
-    env = registry(cr)
+def set_default_config_parameters(env):
+    """post_init_hook: Odoo 17+ lo llama con (env) — Odoo 16 usaba (cr, registry)."""
     defaults = {
         "ai_assistant.openrouter_api_key": "",
         "ai_assistant.model_name": "openai/gpt-4o-mini",

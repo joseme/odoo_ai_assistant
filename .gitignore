@@ -8,3 +8,8 @@ build/
 *.swp
 *.swo
 .DS_Store
+
+# Agent tooling
+.codebase/
+.opencode/
+.planning/

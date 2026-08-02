@@ -8,14 +8,14 @@
         </a>
     </t>
 
-    <!-- Ventana principal del chat flotante -->
+    <!-- Ventana principal del chat flotante (OWL, Odoo 17+) -->
     <t t-name="odoo_ai_assistant.ChatWindow">
-        <div class="ai_assistant_fab ai_assistant_toggle" title="Asistente de IA">
+        <div class="ai_assistant_fab ai_assistant_toggle" t-att-class="state.isOpen ? 'active' : ''" t-on-click="toggle" title="Asistente de IA">
             <i class="oi oi-apps"/>
             <span class="ai_assistant_fab_pulse"/>
         </div>
 
-        <div class="ai_assistant_window">
+        <div class="ai_assistant_window" t-att-class="state.isOpen ? 'active' : ''">
             <div class="ai_assistant_header">
                 <div class="ai_assistant_header_left">
                     <div class="ai_assistant_header_icon">
@@ -27,40 +27,117 @@
                     </div>
                 </div>
                 <div class="ai_assistant_header_actions">
-                    <button class="ai_assistant_header_btn ai_assistant_history_toggle" title="Historial">
+                    <button class="ai_assistant_header_btn ai_assistant_history_toggle" t-on-click="toggleHistory" title="Historial">
                         <i class="bi-history"/>
                     </button>
-                    <button class="ai_assistant_header_btn ai_assistant_new_chat" title="Nueva conversación">
+                    <button class="ai_assistant_header_btn ai_assistant_new_chat" t-on-click="newChat" title="Nueva conversación">
                         <i class="bi-plus-lg"/>
                     </button>
-                    <button class="ai_assistant_header_btn ai_assistant_close" title="Cerrar">
+                    <button class="ai_assistant_header_btn ai_assistant_close" t-on-click="close" title="Cerrar">
                         <i class="bi-x-lg"/>
                     </button>
                 </div>
             </div>
 
-            <div class="ai_assistant_context_bar" t-if="widget.currentContext &amp;&amp; widget.currentContext.model">
+            <div class="ai_assistant_context_bar" t-if="state.currentContext.model">
                 <span class="ai_assistant_context_badge">
                     <i class="bi-geo-alt"/>
-                    <t t-esc="widget.currentContext.module || widget.currentContext.model"/>
-                    <t t-if="widget.currentContext.record_id">
-                        · #<t t-esc="widget.currentContext.record_id"/>
+                    <t t-esc="state.currentContext.module || state.currentContext.model"/>
+                    <t t-if="state.currentContext.record_id">
+                        · #<t t-esc="state.currentContext.record_id"/>
                     </t>
                 </span>
             </div>
 
-            <div class="ai_assistant_history_panel">
+            <div class="ai_assistant_history_panel" t-att-class="state.showHistory ? 'active' : ''">
                 <div class="ai_assistant_history_header">
                     <h4>Conversaciones</h4>
-                    <button class="ai_assistant_history_toggle">
-                        <i class="fa bi-arrow-left"/>
+                    <button t-on-click="toggleHistory">
+                        <i class="bi-arrow-left"/>
                     </button>
                 </div>
-                <div class="ai_assistant_history_list"/>
+                <div class="ai_assistant_history_list">
+                    <t t-if="!state.conversations.length">
+                        <div class="ai_assistant_no_history">No hay conversaciones previas</div>
+                    </t>
+                    <t t-else="">
+                        <t t-foreach="state.conversations" t-as="conv" t-key="conv.id">
+                            <div class="ai_assistant_history_item" t-on-click="onSelectHistory" t-att-data-id="conv.id">
+                                <div class="ai_assistant_history_item_title">
+                                    <t t-esc="conv.title"/>
+                                </div>
+                                <div class="ai_assistant_history_item_meta">
+                                    <t t-esc="(conv.context_module || '') + ' · ' + (conv.message_count || 0) + ' mensajes'"/>
+                                </div>
+                                <button class="ai_assistant_delete_chat" t-on-click.stop="onDeleteChat" t-att-data-id="conv.id" title="Eliminar">
+                                    <i class="bi-trash"/>
+                                </button>
+                            </div>
+                        </t>
+                    </t>
+                </div>
             </div>
 
-            <div class="ai_assistant_chat_panel">
-                <div class="ai_assistant_messages"/>
+            <div class="ai_assistant_chat_panel" t-att-class="state.showHistory ? 'hidden' : ''">
+                <div class="ai_assistant_messages" t-ref="messages">
+                    <t t-foreach="state.messages" t-as="msg" t-key="msg.key">
+                        <div class="ai_assistant_msg" t-att-class="'ai_assistant_msg_' + msg.role">
+                            <div class="ai_assistant_msg_avatar">
+                                <i t-att-class="msg.role === 'user' ? 'bi-person' : msg.role === 'assistant' ? 'bi-apps' : 'bi-info-circle'"/>
+                            </div>
+                            <div class="ai_assistant_msg_body">
+                                <div class="ai_assistant_msg_content">
+                                    <t t-if="msg.role === 'assistant'" t-out="msg.html"/>
+                                    <t t-else="" t-esc="msg.content"/>
+                                </div>
+                                <div class="ai_assistant_msg_meta">
+                                    <t t-esc="msg.time"/>
+                                </div>
+                                <t t-if="msg.sources.length">
+                                    <div class="ai_assistant_sources">
+                                        <button class="ai_assistant_sources_toggle" t-on-click="onToggleSources" t-att-data-key="msg.key">
+                                            <i class="bi-link-45deg"/> Fuentes
+                                        </button>
+                                        <div class="ai_assistant_sources_list" t-att-style="msg.showSources ? '' : 'display:none;'">
+                                            <t t-foreach="msg.sources" t-as="source" t-key="source_index">
+                                                <t t-if="source.type === 'knowledge'">
+                                                    <t t-foreach="source.items" t-as="item_k" t-key="item_k_index">
+                                                        <div class="ai_assistant_source_item">
+                                                            <i class="bi-book"/>
+                                                            <span class="ai_assistant_source_link" t-on-click="onOpenRecord" t-att-data-model="item_k.model" t-att-data-id="item_k.id">
+                                                                <t t-esc="item_k.title"/>
+                                                            </span>
+                                                        </div>
+                                                    </t>
+                                                </t>
+                                                <t t-elif="source.type === 'web'">
+                                                    <t t-foreach="source.items" t-as="item_w" t-key="item_w_index">
+                                                        <div class="ai_assistant_source_item">
+                                                            <i class="bi-globe"/>
+                                                            <a t-att-href="item_w.url" target="_blank" rel="noopener">
+                                                                <t t-esc="item_w.title"/>
+                                                            </a>
+                                                        </div>
+                                                    </t>
+                                                </t>
+                                            </t>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </t>
+                    <t t-if="state.loading">
+                        <div class="ai_assistant_msg ai_assistant_msg_assistant ai_assistant_loading_msg">
+                            <div class="ai_assistant_msg_avatar"><i class="bi-apps"/></div>
+                            <div class="ai_assistant_msg_body">
+                                <div class="ai_assistant_typing">
+                                    <span/><span/><span/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
             </div>
 
             <div class="ai_assistant_input_area">
@@ -69,16 +146,20 @@
                         class="ai_assistant_input"
                         placeholder="Escribe tu mensaje..."
                         rows="1"
+                        t-ref="input"
+                        t-on-keydown="onKeyDown"
+                        t-on-input="onInput"
+                        t-att-disabled="state.loading"
                     />
                     <div class="ai_assistant_input_actions">
-                        <button class="ai_assistant_send" title="Enviar">
+                        <button class="ai_assistant_send" t-on-click="send" t-att-disabled="state.loading" title="Enviar">
                             <i class="bi-send"/>
                         </button>
                     </div>
                 </div>
                 <div class="ai_assistant_input_footer">
                     <span class="ai_assistant_powered_by">Potenciado por OpenRouter</span>
-                    <button class="ai_assistant_settings" title="Configuración">
+                    <button class="ai_assistant_settings" t-on-click="openSettings" title="Configuración">
                         <i class="bi-gear"/>
                     </button>
                 </div>

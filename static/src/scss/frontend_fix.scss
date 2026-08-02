@@ -1,0 +1,12 @@
+// Fix upstream Odoo 17 (builds 2026+): en instalaciones mínimas (base+web sin
+// web_editor), la compilación de web.assets_frontend falla porque
+// web/static/src/scss/bootstrap_overridden_frontend.scss usa `$gray-200` antes
+// de que web/static/src/scss/pre_variables.scss lo defina (web_editor lo define
+// vía `$grays` solo cuando está instalado). Resultado: página de login sin
+// estilo ("Style error").
+//
+// Este archivo se inyecta al INICIO del bundle vía ir.asset (directive
+// `prepend`, sequence < 16 → se aplica antes de los manifests). `!default`
+// respeta las definiciones de web_editor cuando existe.
+$gray-200: #e9ecef !default;
+$black: #000 !default;
