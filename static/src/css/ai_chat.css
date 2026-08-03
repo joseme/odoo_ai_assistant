@@ -78,17 +78,29 @@
 /* ---- Systray Button ---- */
 .ai_assistant_systray_btn {
     cursor: pointer;
-    padding: 0 8px;
-    color: #666;
-    transition: color 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin: 0 4px;
+    border-radius: 50%;
+    background: var(--ai-primary);
+    color: #ffffff;
+    text-decoration: none;
+    box-shadow: 0 2px 6px rgba(124, 58, 237, 0.4);
+    transition: background 0.2s, transform 0.2s;
 }
 
 .ai_assistant_systray_btn:hover {
-    color: var(--ai-primary);
+    background: var(--ai-primary-dark);
+    color: #ffffff;
+    transform: scale(1.08);
 }
 
 .ai_assistant_systray_btn i {
     font-size: 18px;
+    line-height: 1;
 }
 
 /* ---- Ventana del Chat ---- */
