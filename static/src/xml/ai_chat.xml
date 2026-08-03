@@ -8,7 +8,7 @@
         <span class="ai_assistant_systray_wrap">
             <a href="#" class="ai_assistant_systray_btn" title="Asistente de IA" role="button"
                t-on-click="onToggle">
-                <i class="fa fa-robot"/>
+                <i class="fa fa-comments"/>
             </a>
             <AIAssistant t-if="state.open" t-key="assistant"/>
         </span>
@@ -21,7 +21,7 @@
         <div class="ai_assistant_root">
             <!-- Botón flotante (FAB) -->
             <div class="ai_assistant_fab ai_assistant_toggle" title="Asistente de IA">
-                <i class="fa fa-robot"></i>
+                <i class="fa fa-comments"></i>
                 <span class="ai_assistant_fab_pulse"></span>
             </div>
 
@@ -31,7 +31,7 @@
                 <div class="ai_assistant_header">
                     <div class="ai_assistant_header_left">
                         <div class="ai_assistant_header_icon">
-                            <i class="fa fa-robot"></i>
+                            <i class="fa fa-comments"></i>
                         </div>
                         <div class="ai_assistant_header_info">
                             <div class="ai_assistant_header_title">Asistente de IA</div>

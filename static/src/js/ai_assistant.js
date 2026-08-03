@@ -249,7 +249,7 @@ export class AIAssistant extends Component {
         const $msg = this._mk('<div class="ai_assistant_msg ai_assistant_msg_' + msg.role + '"></div>');
         const avatar = this._mk('<div class="ai_assistant_msg_avatar"></div>');
         if (msg.role === "user") avatar.innerHTML = '<i class="fa fa-user"></i>';
-        else if (msg.role === "assistant") avatar.innerHTML = '<i class="fa fa-robot"></i>';
+        else if (msg.role === "assistant") avatar.innerHTML = '<i class="fa fa-comments"></i>';
         else avatar.innerHTML = '<i class="fa fa-info-circle"></i>';
 
         const content = this._mk('<div class="ai_assistant_msg_content"></div>');
@@ -342,7 +342,7 @@ export class AIAssistant extends Component {
             if (container) {
                 const el = this._mk(
                     '<div class="ai_assistant_msg ai_assistant_msg_assistant ai_assistant_loading_msg">' +
-                        '<div class="ai_assistant_msg_avatar"><i class="fa fa-robot"></i></div>' +
+                        '<div class="ai_assistant_msg_avatar"><i class="fa fa-comments"></i></div>' +
                         '<div class="ai_assistant_msg_body"><div class="ai_assistant_typing"><span></span><span></span><span></span></div></div></div>'
                 );
                 container.appendChild(el);
