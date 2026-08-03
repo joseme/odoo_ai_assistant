@@ -2,117 +2,117 @@
 <odoo>
 
     <!-- ============================================================ -->
-    <!--  Botón en la barra de Systray                                 -->
+    <!--  Botón en la barra de Systray + chat (Odoo 17 / OWL2)        -->
     <!-- ============================================================ -->
-    <template id="odoo_ai_assistant.SystrayItem" name="AI Assistant Systray Item" t-name="odoo_ai_assistant.SystrayItem">
-        <a href="#" class="ai_assistant_systray_btn" title="Asistente de IA" role="button">
-            <i class="fa fa-robot"/>
-        </a>
-    </template>
+    <t t-name="odoo_ai_assistant.SystrayItem">
+        <span class="ai_assistant_systray_wrap">
+            <a href="#" class="ai_assistant_systray_btn" title="Asistente de IA" role="button"
+               t-on-click="onToggle">
+                <i class="fa fa-robot"/>
+            </a>
+            <AIAssistant t-if="state.open" t-key="assistant"/>
+        </span>
+    </t>
 
     <!-- ============================================================ -->
     <!--  Ventana principal del chat flotante                          -->
     <!-- ============================================================ -->
-    <template id="odoo_ai_assistant.ChatWindow" name="AI Assistant Chat Window" t-name="odoo_ai_assistant.ChatWindow">
-        <!-- Botón flotante (FAB) -->
-        <div class="ai_assistant_fab ai_assistant_toggle" title="Asistente de IA">
-            <i class="fa fa-robot"/>
-            <span class="ai_assistant_fab_pulse"/>
-        </div>
+    <t t-name="odoo_ai_assistant.ChatWindow">
+        <div class="ai_assistant_root">
+            <!-- Botón flotante (FAB) -->
+            <div class="ai_assistant_fab ai_assistant_toggle" title="Asistente de IA">
+                <i class="fa fa-robot"></i>
+                <span class="ai_assistant_fab_pulse"></span>
+            </div>
 
-        <!-- Ventana del chat -->
-        <div class="ai_assistant_window">
-            <!-- Header -->
-            <div class="ai_assistant_header">
-                <div class="ai_assistant_header_left">
-                    <div class="ai_assistant_header_icon">
-                        <i class="fa fa-robot"/>
+            <!-- Ventana del chat -->
+            <div class="ai_assistant_window">
+                <!-- Header -->
+                <div class="ai_assistant_header">
+                    <div class="ai_assistant_header_left">
+                        <div class="ai_assistant_header_icon">
+                            <i class="fa fa-robot"></i>
+                        </div>
+                        <div class="ai_assistant_header_info">
+                            <div class="ai_assistant_header_title">Asistente de IA</div>
+                            <div class="ai_assistant_header_status">En línea</div>
+                        </div>
                     </div>
-                    <div class="ai_assistant_header_info">
-                        <div class="ai_assistant_header_title">Asistente de IA</div>
-                        <div class="ai_assistant_header_status">En línea</div>
-                    </div>
-                </div>
-                <div class="ai_assistant_header_actions">
-                    <button class="ai_assistant_header_btn ai_assistant_history_toggle" title="Historial">
-                        <i class="fa fa-history"/>
-                    </button>
-                    <button class="ai_assistant_header_btn ai_assistant_new_chat" title="Nueva conversación">
-                        <i class="fa fa-plus"/>
-                    </button>
-                    <button class="ai_assistant_header_btn ai_assistant_close" title="Cerrar">
-                        <i class="fa fa-times"/>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Contexto actual (badge) -->
-            <div class="ai_assistant_context_bar" t-if="widget.currentContext &amp;&amp; widget.currentContext.model">
-                <span class="ai_assistant_context_badge">
-                    <i class="fa fa-map-marker"/>
-                    <t t-esc="widget.currentContext.module || widget.currentContext.model"/>
-                    <t t-if="widget.currentContext.record_id">
-                        · #<t t-esc="widget.currentContext.record_id"/>
-                    </t>
-                </span>
-            </div>
-
-            <!-- Panel de historial -->
-            <div class="ai_assistant_history_panel">
-                <div class="ai_assistant_history_header">
-                    <h4>Conversaciones</h4>
-                    <button class="ai_assistant_history_toggle">
-                        <i class="fa fa-arrow-left"/>
-                    </button>
-                </div>
-                <div class="ai_assistant_history_list"/>
-            </div>
-
-            <!-- Panel del chat -->
-            <div class="ai_assistant_chat_panel">
-                <!-- Área de mensajes -->
-                <div class="ai_assistant_messages"/>
-            </div>
-
-            <!-- Área de input -->
-            <div class="ai_assistant_input_area">
-                <div class="ai_assistant_input_container">
-                    <textarea
-                        class="ai_assistant_input"
-                        placeholder="Escribe tu mensaje..."
-                        rows="1"
-                    />
-                    <div class="ai_assistant_input_actions">
-                        <!-- Botón de voz -->
-                        <button class="ai_assistant_voice_btn" title="Entrada de voz">
-                            <i class="fa fa-microphone"/>
+                    <div class="ai_assistant_header_actions">
+                        <button class="ai_assistant_header_btn ai_assistant_history_toggle" title="Historial">
+                            <i class="fa fa-history"></i>
                         </button>
-                        <!-- Botón de enviar -->
-                        <button class="ai_assistant_send" title="Enviar">
-                            <i class="fa fa-paper-plane"/>
+                        <button class="ai_assistant_header_btn ai_assistant_new_chat" title="Nueva conversación">
+                            <i class="fa fa-plus"></i>
+                        </button>
+                        <button class="ai_assistant_header_btn ai_assistant_close" title="Cerrar">
+                            <i class="fa fa-times"></i>
                         </button>
                     </div>
                 </div>
-                <div class="ai_assistant_input_footer">
-                    <span class="ai_assistant_powered_by">Potenciado por Gemini</span>
-                    <button class="ai_assistant_settings" title="Configuración">
-                        <i class="fa fa-cog"/>
-                    </button>
+
+                <!-- Contexto actual (badge) -->
+                <div class="ai_assistant_context_bar" style="display:none">
+                    <span class="ai_assistant_context_badge">
+                        <i class="fa fa-map-marker"></i>
+                        <span></span>
+                    </span>
+                </div>
+
+                <!-- Panel de historial -->
+                <div class="ai_assistant_history_panel">
+                    <div class="ai_assistant_history_header">
+                        <h4>Conversaciones</h4>
+                        <button class="ai_assistant_history_toggle">
+                            <i class="fa fa-arrow-left"></i>
+                        </button>
+                    </div>
+                    <div class="ai_assistant_history_list"></div>
+                </div>
+
+                <!-- Panel del chat -->
+                <div class="ai_assistant_chat_panel">
+                    <div class="ai_assistant_messages"></div>
+                </div>
+
+                <!-- Área de input -->
+                <div class="ai_assistant_input_area">
+                    <div class="ai_assistant_input_container">
+                        <textarea
+                            class="ai_assistant_input"
+                            placeholder="Escribe tu mensaje..."
+                            rows="1"
+                        ></textarea>
+                        <div class="ai_assistant_input_actions">
+                            <button class="ai_assistant_voice_btn" title="Entrada de voz">
+                                <i class="fa fa-microphone"></i>
+                            </button>
+                            <button class="ai_assistant_send" title="Enviar">
+                                <i class="fa fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="ai_assistant_input_footer">
+                        <span class="ai_assistant_powered_by">Asistente de IA</span>
+                        <button class="ai_assistant_settings" title="Configuración">
+                            <i class="fa fa-cog"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-    </template>
+    </t>
 
     <!-- ============================================================ -->
     <!--  Componente de input de voz (standalone)                      -->
     <!-- ============================================================ -->
-    <template id="odoo_ai_assistant.VoiceInput" name="AI Assistant Voice Input" t-name="odoo_ai_assistant.VoiceInput">
+    <t t-name="odoo_ai_assistant.VoiceInput">
         <div class="ai_voice_container">
-            <button class="ai_voice_btn" title="Hablar">
-                <i class="fa fa-microphone"/>
+            <button class="ai_voice_btn" title="Hablar" t-on-click="onToggleRecording">
+                <i class="fa fa-microphone"></i>
             </button>
-            <div class="ai_voice_indicator"/>
+            <div class="ai_voice_indicator"></div>
         </div>
-    </template>
+    </t>
 
 </odoo>
