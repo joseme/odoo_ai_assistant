@@ -456,11 +456,12 @@
 }
 
 .ai_assistant_msg_content {
-    padding: 12px 16px;
-    border-radius: 14px;
+    padding: 14px 18px;
+    border-radius: 16px;
     font-size: 14px;
-    line-height: 1.6;
+    line-height: 1.65;
     word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .ai_assistant_msg_user .ai_assistant_msg_content {
@@ -474,6 +475,7 @@
     color: var(--ai-assistant-text);
     border-bottom-left-radius: 4px;
     border: 1px solid var(--ai-border);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .ai_assistant_msg_system .ai_assistant_msg_content {
@@ -483,69 +485,217 @@
     font-size: 13px;
 }
 
-/* Markdown en respuestas */
+/* ============================================================
+   Markdown en respuestas - Formato amigable y legible
+   ============================================================ */
+
+/* Párrafos */
+.ai_md_paragraph {
+    margin: 0 0 10px 0;
+    line-height: 1.7;
+}
+
+.ai_md_paragraph:last-child {
+    margin-bottom: 0;
+}
+
+/* Encabezados */
 .ai_assistant_msg_assistant .ai_assistant_msg_content h2,
 .ai_assistant_msg_assistant .ai_assistant_msg_content h3,
-.ai_assistant_msg_assistant .ai_assistant_msg_content h4 {
-    margin: 12px 0 8px 0;
-    font-weight: 600;
+.ai_assistant_msg_assistant .ai_assistant_msg_content h4,
+.ai_assistant_msg_assistant .ai_assistant_msg_content h5 {
+    margin: 16px 0 8px 0;
+    font-weight: 700;
     color: #0f172a;
+    line-height: 1.3;
 }
 
-.ai_assistant_msg_assistant .ai_assistant_msg_content h2 { font-size: 16px; }
-.ai_assistant_msg_assistant .ai_assistant_msg_content h3 { font-size: 15px; }
-.ai_assistant_msg_assistant .ai_assistant_msg_content h4 { font-size: 14px; }
+.ai_md_h2 {
+    font-size: 17px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--ai-primary-light);
+}
 
-.ai_assistant_msg_assistant .ai_assistant_msg_content code {
-    background: #e2e8f0;
-    padding: 2px 6px;
-    border-radius: 4px;
+.ai_md_h3 {
+    font-size: 15px;
+    color: var(--ai-primary-dark);
+}
+
+.ai_md_h4 {
+    font-size: 14px;
+    color: #334155;
+}
+
+.ai_md_h5 {
     font-size: 13px;
-    font-family: "Fira Code", "Consolas", monospace;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.ai_assistant_msg_assistant .ai_assistant_msg_content pre {
+/* Código inline */
+.ai_inline_code {
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-size: 13px;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    color: #be185d;
+    border: 1px solid #e2e8f0;
+    word-break: break-word;
+}
+
+/* Bloques de código */
+.ai_code_block {
+    margin: 12px 0;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #334155;
+}
+
+.ai_code_header {
+    background: #0f172a;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ai_code_lang {
+    font-size: 11px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ai_code_block pre {
     background: #1e293b;
     color: #e2e8f0;
-    padding: 12px 16px;
-    border-radius: 8px;
+    padding: 14px 16px;
+    margin: 0;
     overflow-x: auto;
-    margin: 8px 0;
+    font-size: 13px;
+    line-height: 1.6;
 }
 
-.ai_assistant_msg_assistant .ai_assistant_msg_content pre code {
+.ai_code_block pre code {
     background: none;
     padding: 0;
     color: inherit;
+    font-size: inherit;
 }
 
+/* Listas */
 .ai_assistant_msg_assistant .ai_assistant_msg_content ul,
 .ai_assistant_msg_assistant .ai_assistant_msg_content ol {
-    margin: 8px 0;
-    padding-left: 20px;
+    margin: 10px 0;
+    padding-left: 24px;
 }
 
 .ai_assistant_msg_assistant .ai_assistant_msg_content li {
-    margin: 4px 0;
+    margin: 6px 0;
+    line-height: 1.6;
+    padding-left: 4px;
 }
 
-.ai_assistant_msg_assistant .ai_assistant_msg_content a {
+.ai_md_li {
+    list-style-type: disc;
+}
+
+.ai_md_oli {
+    list-style-type: decimal;
+}
+
+/* Viñetas personalizadas */
+.ai_md_li::marker {
     color: var(--ai-primary);
+    font-size: 10px;
+}
+
+.ai_md_oli::marker {
+    color: var(--ai-primary);
+    font-weight: 600;
+}
+
+/* Blockquotes */
+.ai_md_blockquote {
+    margin: 0;
+    padding: 10px 14px;
+    border-left: 3px solid var(--ai-primary-light);
+    background: var(--ai-primary-bg);
+    border-radius: 0 8px 8px 0;
+    color: #475569;
+    font-style: italic;
+    line-height: 1.6;
+}
+
+.ai_md_blockquote_group {
+    margin: 10px 0;
+    padding: 0;
+}
+
+.ai_md_blockquote_group .ai_md_blockquote {
+    margin: 0;
+    border-radius: 0;
+}
+
+.ai_md_blockquote_group .ai_md_blockquote:first-child {
+    border-radius: 8px 0 0 0;
+}
+
+.ai_md_blockquote_group .ai_md_blockquote:last-child {
+    border-radius: 0 0 8px 0;
+}
+
+/* Separadores */
+.ai_md_separator {
+    border: none;
+    border-top: 2px solid var(--ai-border);
+    margin: 16px 0;
+}
+
+/* Enlaces */
+.ai_md_link {
+    color: var(--ai-primary);
+    text-decoration: none;
+    border-bottom: 1px dashed var(--ai-primary-light);
+    transition: all 0.2s;
+}
+
+.ai_md_link:hover {
+    color: var(--ai-primary-dark);
+    border-bottom-style: solid;
     text-decoration: none;
 }
 
-.ai_assistant_msg_assistant .ai_assistant_msg_content a:hover {
-    text-decoration: underline;
+/* Imágenes (referencia en chat) */
+.ai_md_image {
+    display: inline-block;
+    background: #f1f5f9;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #64748b;
+    font-style: italic;
 }
 
+/* Negrita y cursiva */
 .ai_assistant_msg_assistant .ai_assistant_msg_content strong {
-    font-weight: 600;
+    font-weight: 700;
     color: #0f172a;
 }
 
 .ai_assistant_msg_assistant .ai_assistant_msg_content em {
     font-style: italic;
     color: #475569;
+}
+
+/* Negrita+cursiva */
+.ai_assistant_msg_assistant .ai_assistant_msg_content strong em,
+.ai_assistant_msg_assistant .ai_assistant_msg_content em strong {
+    font-weight: 700;
+    font-style: italic;
+    color: #0f172a;
 }
 
 /* Metadata del mensaje */
@@ -814,4 +964,53 @@
     background: #475569;
     color: #e2e8f0;
     border-color: #64748b;
+}
+
+/* ---- Dark Mode: Markdown Elements ---- */
+.o_dark .ai_inline_code {
+    background: linear-gradient(135deg, #334155, #475569);
+    color: #f472b6;
+    border-color: #475569;
+}
+
+.o_dark .ai_code_block {
+    border-color: #475569;
+}
+
+.o_dark .ai_code_header {
+    background: #0f172a;
+}
+
+.o_dark .ai_code_block pre {
+    background: #0f172a;
+    color: #e2e8f0;
+}
+
+.o_dark .ai_md_blockquote {
+    background: #334155;
+    border-left-color: var(--ai-primary-light);
+    color: #94a3b8;
+}
+
+.o_dark .ai_md_h2 {
+    color: #f1f5f9;
+    border-bottom-color: #475569;
+}
+
+.o_dark .ai_md_h3 {
+    color: var(--ai-primary-light);
+}
+
+.o_dark .ai_md_h4,
+.o_dark .ai_md_h5 {
+    color: #cbd5e1;
+}
+
+.o_dark .ai_md_separator {
+    border-top-color: #475569;
+}
+
+.o_dark .ai_md_image {
+    background: #334155;
+    color: #94a3b8;
 }

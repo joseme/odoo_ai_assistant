@@ -96,23 +96,85 @@ export class AIService {
     }
 
     /**
-     * Renderizar Markdown simple a HTML
+     * Renderizar Markdown a HTML con formato amigable.
+     *
+     * Soporta:
+     * - Encabezados (#, ##, ###)
+     * - Negrita (**texto**) y cursiva (*texto*)
+     * - Código inline (`código`) y bloques de código (```)
+     * - Listas con viñetas (-, *) y numeradas (1.)
+     * - Blockquotes (> texto)
+     * - Enlaces [texto](url)
+     * - Separadores (---)
+     * - Párrafos y saltos de línea
      */
     renderMarkdown(text) {
         if (!text) return "";
-        return text
-            .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code class="$1">$2</code></pre>')
-            .replace(/`([^`]+)`/g, "<code>$1</code>")
-            .replace(/^### (.+)$/gm, "<h4>$1</h4>")
-            .replace(/^## (.+)$/gm, "<h3>$1</h3>")
-            .replace(/^# (.+)$/gm, "<h2>$1</h2>")
-            .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-            .replace(/\*([^*]+)\*/g, "<em>$1</em>")
-            .replace(/^[*-] (.+)$/gm, '<li class="ai_md_li">$1</li>')
-            .replace(/^\d+\. (.+)$/gm, '<li class="ai_md_oli">$1</li>')
-            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
-            .replace(/\n\n/g, "</p><p>")
-            .replace(/\n/g, "<br>");
+
+        // Escapar HTML para seguridad, pero preservar markdown
+        let html = text;
+
+        // Bloques de código (```) - procesar primero para no interferir con otros
+        html = html.replace(
+            /```(\w*)\n([\s\S]*?)```/g,
+            '<div class="ai_code_block"><div class="ai_code_header"><span class="ai_code_lang">$1</span></div><pre><code class="$1">$2</code></pre></div>'
+        );
+
+        // Código inline
+        html = html.replace(/`([^`]+)`/g, '<code class="ai_inline_code">$1</code>');
+
+        // Encabezados
+        html = html.replace(/^#### (.+)$/gm, '<h5 class="ai_md_h5">$1</h5>');
+        html = html.replace(/^### (.+)$/gm, '<h4 class="ai_md_h4">$1</h4>');
+        html = html.replace(/^## (.+)$/gm, '<h3 class="ai_md_h3">$1</h3>');
+        html = html.replace(/^# (.+)$/gm, '<h2 class="ai_md_h2">$1</h2>');
+
+        // Negrita y cursiva
+        html = html.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
+        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+        // Blockquotes (> texto)
+        html = html.replace(/^> (.+)$/gm, '<blockquote class="ai_md_blockquote">$1</blockquote>');
+        // Agrupar blockquotes consecutivos
+        html = html.replace(
+            /((?:<blockquote class="ai_md_blockquote">.*?<\/blockquote>\s*)+)/g,
+            '<div class="ai_md_blockquote_group">$1</div>'
+        );
+
+        // Separadores horizontales (---, ***, ___)
+        html = html.replace(/^[-*_]{3,}$/gm, '<hr class="ai_md_separator"/>');
+
+        // Listas con viñetas (-, *)
+        html = html.replace(/^[-*] (.+)$/gm, '<li class="ai_md_li">$1</li>');
+
+        // Listas numeradas
+        html = html.replace(/^\d+\. (.+)$/gm, '<li class="ai_md_oli">$1</li>');
+
+        // Enlaces [texto](url)
+        html = html.replace(
+            /\[([^\]]+)\]\(([^)]+)\)/g,
+            '<a href="$2" target="_blank" rel="noopener" class="ai_md_link">$1</a>'
+        );
+
+        // Imágenes (alternativa de texto para chat)
+        html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<span class="ai_md_image">[Imagen: $1]</span>');
+
+        // Párrafos: doble salto de línea
+        html = html.replace(/\n\n/g, '</p><p class="ai_md_paragraph">');
+
+        // Saltos de línea simples
+        html = html.replace(/\n/g, '<br/>');
+
+        // Envolver en párrafo inicial
+        html = '<p class="ai_md_paragraph">' + html + '</p>';
+
+        // Limpiar párrafos vacíos y etiquetas de bloque anidadas
+        html = html.replace(/<p class="ai_md_paragraph">\s*<(h[2-5]|ul|ol|div|blockquote|hr)/g, '<$1');
+        html = html.replace(/<\/?(h[2-5]|ul|ol|div|blockquote|hr)[^>]*>\s*<\/p>/g, '');
+        html = html.replace(/<p class="ai_md_paragraph">\s*<\/p>/g, '');
+
+        return html;
     }
 
     /**
